@@ -1,0 +1,1 @@
+Business logic that is independent of HTTP (called by controllers).

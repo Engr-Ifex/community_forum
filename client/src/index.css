@@ -1,0 +1,13 @@
+/*
+ * Tailwind CSS v4 - configured through the Vite plugin (`@tailwindcss/vite`).
+ * There is no tailwind.config.js / postcss.config.js in v4; design tokens live
+ * in `@theme` blocks here when the project needs customisation.
+ */
+@import "tailwindcss";
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
