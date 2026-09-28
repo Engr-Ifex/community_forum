@@ -1,3 +1,5 @@
+import ProtectedRoute from "./routes/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Admin from "./components/Admin/Admin";
@@ -13,6 +15,7 @@ import Navbar from "./components/common/Navbar";
 
 const App = () => {
   return (
+    <AuthProvider>
     <BrowserRouter>
       <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
         <Navbar />
@@ -23,15 +26,18 @@ const App = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/discussions" element={<Discussions />} />
             <Route path="/categories" element={<Categories />} />
+          <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/moderation" element={<Moderation />} />
             <Route path="/admin" element={<Admin />} />
+          </Route>
             <Route path="*" element={<Home />} />
           </Routes>
         </main>
         <Footer />
       </div>
     </BrowserRouter>
+    </AuthProvider>
   );
 };
 
