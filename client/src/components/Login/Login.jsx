@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useState } from "react"; import { useNavigate } from "react-router-dom"; import { useAuth } from "../../context/AuthContext";
 const Login = () => { const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-const handleSubmit = (e) => { e.preventDefault(); alert("Login form submitted!"); };
+const { login } = useAuth(); const navigate = useNavigate();
+const handleSubmit = (e) => { e.preventDefault();
+// Temporary frontend authentication
+login({
+  email,
+});
+
+navigate("/");
+};
 return ( <div style={{ maxWidth: "400px", margin: "50px auto" }}> <h2>Login</h2>
   <form onSubmit={handleSubmit}>
     <input
@@ -11,7 +19,8 @@ return ( <div style={{ maxWidth: "400px", margin: "50px auto" }}> <h2>Login</h2>
       required
     />
 
-    <br /><br />
+    <br />
+    <br />
 
     <input
       type="password"
@@ -21,7 +30,8 @@ return ( <div style={{ maxWidth: "400px", margin: "50px auto" }}> <h2>Login</h2>
       required
     />
 
-    <br /><br />
+    <br />
+    <br />
 
     <button type="submit">Login</button>
   </form>

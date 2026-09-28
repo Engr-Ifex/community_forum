@@ -1,5 +1,5 @@
 import { useState } from "react";
-const Register = () => { const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [username, setUsername] = useState(""); const [password, setPassword] = useState("");
+const Register = () => { const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [confirmPassword, setConfirmPassword] = useState("");
 const handleSubmit = (e) => { e.preventDefault(); alert("Registration form submitted!"); };
 return ( <div className="max-w-md mx-auto p-6"> <h1 className="text-2xl font-bold mb-6"> Create Account </h1>
   <form onSubmit={handleSubmit}>
@@ -22,19 +22,19 @@ return ( <div className="max-w-md mx-auto p-6"> <h1 className="text-2xl font-bol
     />
 
     <input
-      type="text"
-      placeholder="Username"
-      value={username}
-      onChange={(e) => setUsername(e.target.value)}
+      type="password"
+      placeholder="Password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
       required
       className="w-full border p-3 mb-4 rounded"
     />
 
     <input
       type="password"
-      placeholder="Password"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
+      placeholder="Confirm Password"
+      value={confirmPassword}
+      onChange={(e) => setConfirmPassword(e.target.value)}
       required
       className="w-full border p-3 mb-4 rounded"
     />
