@@ -5,6 +5,8 @@ import { successResponse } from "../utils/apiResponse.js";
 import authorizationRoutes from "./authorization.routes.js";
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
+import categoryRoutes from "./category.routes.js";
+import discussionRoutes from "./discussion.routes.js";
 
 const router = Router();
 
@@ -23,4 +25,6 @@ router.get("/health", (req, res) =>
 router.use("/auth", authRoutes);
 router.use("/authorization", authorizationRoutes);
 router.use("/users", userRoutes);
+router.use("/categories", categoryRoutes);
+router.use("/discussions", discussionRoutes);
 export default router;
