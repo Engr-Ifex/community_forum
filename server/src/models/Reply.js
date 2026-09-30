@@ -2,27 +2,32 @@
 
 const replySchema = new mongoose.Schema(
   {
-    // The discussion this reply belongs to.
-    discussion: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Discussion",
-      required: [true, "Reply discussion is required"],
-      index: true,
-    },
-
-    body: {
+    content: {
       type: String,
-      required: [true, "Reply body is required"],
+      required: [true, "Reply content is required"],
       trim: true,
-      minlength: [1, "Reply body cannot be empty"],
+      minlength: [1, "Reply cannot be empty"],
       maxlength: [5000, "Reply cannot exceed 5000 characters"],
     },
 
-    // The ID of the user who wrote this reply.
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Reply author is required"],
+      index: true,
+    },
+
+    discussion: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Discussion",
+      required: [true, "Discussion is required"],
+      index: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["active", "removed"],
+      default: "active",
       index: true,
     },
   },
@@ -31,10 +36,6 @@ const replySchema = new mongoose.Schema(
   },
 );
 
-// Helps find one user's replies in newest-first order.
-replySchema.index({ author: 1, createdAt: -1 });
-
-// Helps find replies belonging to one discussion.
 replySchema.index({ discussion: 1, createdAt: 1 });
 
 export default mongoose.model("Reply", replySchema);
