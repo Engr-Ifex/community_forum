@@ -4,6 +4,7 @@ import { API_MESSAGES } from "../constants/index.js";
 import { successResponse } from "../utils/apiResponse.js";
 import authorizationRoutes from "./authorization.routes.js";
 import authRoutes from "./auth.routes.js";
+import userRoutes from "./user.routes.js";
 
 const router = Router();
 
@@ -21,5 +22,5 @@ router.get("/health", (req, res) =>
 
 router.use("/auth", authRoutes);
 router.use("/authorization", authorizationRoutes);
-
+router.use("/users", userRoutes);
 export default router;
