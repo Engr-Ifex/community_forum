@@ -27,12 +27,67 @@ export const createDiscussion = async ({
     .lean();
 };
 
-export const getDiscussions = async () => {
-  return Discussion.find({ status: { $ne: "removed" } })
-    .populate("author", "name avatar")
-    .populate("category", "name")
-    .sort({ createdAt: -1 })
-    .lean();
+export const getDiscussions = async ({
+  category,
+  page = 1,
+  limit = 10,
+  sort = "latest",
+}) => {
+  const filter = {
+    status: { $ne: "removed" },
+  };
+
+  // Filter by category
+  if (category) {
+    filter.category = category;
+  }
+
+  // Pagination
+  const skip = (page - 1) * limit;
+
+  // Sorting
+  let sortOption;
+
+  switch (sort) {
+    case "oldest":
+      sortOption = { createdAt: 1 };
+      break;
+
+    case "popular":
+      sortOption = { views: -1, createdAt: -1 };
+      break;
+
+    case "latest":
+    default:
+      sortOption = { createdAt: -1 };
+      break;
+  }
+
+  const [discussions, total] = await Promise.all([
+    Discussion.find(filter)
+      .populate("author", "name avatar")
+      .populate("category", "name")
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+
+    Discussion.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    discussions,
+    pagination: {
+      currentPage: page,
+      limit,
+      totalItems: total,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
+  };
 };
 
 export const getDiscussionById = async (discussionId) => {

@@ -25,14 +25,13 @@ export const create = async (req, res) => {
 };
 
 export const getAll = async (req, res) => {
-  const discussions = await getDiscussions();
+  const result = await getDiscussions(req.query);
 
   return successResponse(res, {
     message: "Discussions retrieved successfully",
-    data: { discussions },
+    data: result,
   });
 };
-
 export const getOne = async (req, res) => {
   const discussion = await incrementDiscussionViews(
     req.params.id,
