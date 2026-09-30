@@ -7,6 +7,9 @@ import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import categoryRoutes from "./category.routes.js";
 import discussionRoutes from "./discussion.routes.js";
+import replyRoutes from "./reply.routes.js";
+import reportRoutes from "./report.routes.js";
+import moderationRoutes from "./moderation.routes.js";
 
 const router = Router();
 
@@ -27,4 +30,7 @@ router.use("/authorization", authorizationRoutes);
 router.use("/users", userRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/discussions", discussionRoutes);
+router.use("/", replyRoutes);
+router.use("/reports", reportRoutes);
+router.use("/moderation", moderationRoutes);
 export default router;

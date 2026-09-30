@@ -15,6 +15,7 @@ import {
   discussionIdParamsSchema,
   createDiscussionSchema,
   updateDiscussionSchema,
+  discussionQuerySchema,
 } from "../validators/discussion.validator.js";
 
 const router = Router();
@@ -25,7 +26,13 @@ const router = Router();
  * Public:
  * Anyone can browse discussions.
  */
-router.get("/", getAll);
+router.get(
+  "/",
+  validate({
+    query: discussionQuerySchema,
+  }),
+  getAll,
+);
 
 /*
  * GET /discussions/:id
