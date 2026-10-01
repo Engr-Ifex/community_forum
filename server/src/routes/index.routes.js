@@ -10,6 +10,7 @@ import discussionRoutes from "./discussion.routes.js";
 import replyRoutes from "./reply.routes.js";
 import reportRoutes from "./report.routes.js";
 import moderationRoutes from "./moderation.routes.js";
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 
@@ -33,4 +34,5 @@ router.use("/discussions", discussionRoutes);
 router.use("/", replyRoutes);
 router.use("/reports", reportRoutes);
 router.use("/moderation", moderationRoutes);
+router.use("/admin", adminRoutes);
 export default router;
