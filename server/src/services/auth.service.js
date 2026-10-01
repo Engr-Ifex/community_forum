@@ -46,6 +46,13 @@ export const registerUser = async ({
 export const loginUser = async ({ email, password }) => {
   const user = await User.findOne({ email }).select("+password");
 
+  if (!user.isActive) {
+  throw createError(
+    403,
+    "Your account has been deactivated",
+  );
+}
+
   if (!user) {
     throw createError(401, "Invalid email or password");
   }
