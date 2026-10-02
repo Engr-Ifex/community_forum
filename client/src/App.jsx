@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Admin from "./components/Admin/Admin";
 import Categories from "./components/Categories/Categories";
+import CategoryPage from "./components/Categories/CategoryPage";
 import Discussions from "./components/Discussions/Discussions";
 import Home from "./components/Home/Home";
 import Login from "./components/Login/Login";
@@ -26,6 +27,7 @@ const App = () => {
             <Route path="/register" element={<Register />} />
             <Route path="/discussions" element={<Discussions />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/categories/:id" element={<CategoryPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />
             <Route path="/moderation" element={<Moderation />} />
