@@ -1,4 +1,4 @@
 import api from "./api";
 
-// Category API calls belong here when that feature is implemented.
-export default api;
+// Ask the backend for categories to show in the category dropdown.
+export const getCategories = () => api.get("/categories");
