@@ -5,6 +5,12 @@ import { successResponse } from "../utils/apiResponse.js";
 import authorizationRoutes from "./authorization.routes.js";
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
+import categoryRoutes from "./category.routes.js";
+import discussionRoutes from "./discussion.routes.js";
+import replyRoutes from "./reply.routes.js";
+import reportRoutes from "./report.routes.js";
+import moderationRoutes from "./moderation.routes.js";
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 
@@ -23,4 +29,10 @@ router.get("/health", (req, res) =>
 router.use("/auth", authRoutes);
 router.use("/authorization", authorizationRoutes);
 router.use("/users", userRoutes);
+router.use("/categories", categoryRoutes);
+router.use("/discussions", discussionRoutes);
+router.use("/", replyRoutes);
+router.use("/reports", reportRoutes);
+router.use("/moderation", moderationRoutes);
+router.use("/admin", adminRoutes);
 export default router;
