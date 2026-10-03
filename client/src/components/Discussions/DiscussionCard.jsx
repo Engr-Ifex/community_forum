@@ -1,57 +1,72 @@
+const formatDate = (dateValue) => {
+  if (!dateValue) {
+    return "";
+  }
 
-import DeleteDiscussion from "./DeleteDiscussion";
+  const date = new Date(dateValue);
 
-function DiscussionCard({ discussion, onView, onDelete }) {
-  if (!discussion) return null;
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
 
-  const discussionId = discussion.id ?? discussion._id;
-  const hasDiscussionId =
-    discussionId !== undefined && discussionId !== null && discussionId !== "";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+  }).format(date);
+};
+
+const DiscussionCard = ({ discussion }) => {
   const authorName =
-    typeof discussion.author === "string"
-      ? discussion.author
-      : discussion.author?.username ?? discussion.author?.name ?? "Unknown author";
-  const replyCount = Array.isArray(discussion.replies)
-    ? discussion.replies.length
-    : discussion.replies ?? 0;
+    typeof discussion.author === "object"
+      ? discussion.author?.name
+      : null;
+
+  const categoryName =
+    typeof discussion.category === "object"
+      ? discussion.category?.name
+      : null;
+
+  const replyCount =
+    discussion.replyCount ??
+    discussion.repliesCount ??
+    discussion.replies?.length;
 
   return (
-    <article className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="text-lg font-semibold text-slate-900">
+    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        {categoryName ? (
+          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+            {categoryName}
+          </span>
+        ) : null}
+
+        {discussion.createdAt ? (
+          <time className="text-sm text-slate-500">
+            {formatDate(discussion.createdAt)}
+          </time>
+        ) : null}
+      </div>
+
+      <h2 className="mt-3 text-xl font-semibold text-slate-900">
         {discussion.title || "Untitled discussion"}
       </h2>
 
-      {discussion.content && <p className="mt-2 text-slate-700">{discussion.content}</p>}
-
-      <p className="mt-3 text-sm text-slate-600">
-        Posted by {authorName}
+      <p className="mt-2 whitespace-pre-wrap text-slate-700">
+        {discussion.body || discussion.content || ""}
       </p>
 
-      <p className="mt-1 text-sm text-slate-600">
-        {replyCount} {replyCount === 1 ? "reply" : "replies"}
-      </p>
+      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+        <span>
+          Started by {authorName || "Forum member"}
+        </span>
 
-      {(onView || onDelete) && hasDiscussionId && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {onView && (
-            <button
-              type="button"
-              onClick={() => onView(discussionId)}
-              className="rounded bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
-            >
-              View discussion
-            </button>
-          )}
-          {onDelete && (
-            <DeleteDiscussion
-              discussionId={discussionId}
-              onDelete={onDelete}
-            />
-          )}
-        </div>
-      )}
+        {replyCount !== undefined ? (
+          <span>
+            {replyCount} {replyCount === 1 ? "reply" : "replies"}
+          </span>
+        ) : null}
+      </div>
     </article>
   );
-}
+};
 
 export default DiscussionCard;
