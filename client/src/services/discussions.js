@@ -1,4 +1,27 @@
 import api from "./api";
 
-// Discussion API calls belong here when that feature is implemented.
-export default api;
+// Ask the backend for one page of discussions using the selected filters.
+export const getDiscussions = ({
+  search = "",
+  category = "",
+  page = 1,
+  limit = 10,
+  sort = "latest",
+} = {}) => {
+  const params = {
+    page,
+    limit,
+    sort,
+  };
+
+  // Don't send empty filters.
+  if (search.trim()) {
+    params.search = search.trim();
+  }
+
+  if (category) {
+    params.category = category;
+  }
+
+  return api.get("/discussions", { params });
+};
