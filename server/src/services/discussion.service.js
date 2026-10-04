@@ -28,6 +28,7 @@ export const createDiscussion = async ({
 };
 
 export const getDiscussions = async ({
+  search,
   category,
   page = 1,
   limit = 10,
@@ -40,6 +41,17 @@ export const getDiscussions = async ({
   // Filter by category
   if (category) {
     filter.category = category;
+  }
+
+  // Keyword search across the title and body.
+  const searchTerm = typeof search === "string" ? search.trim() : "";
+
+  if (searchTerm) {
+    // Escape regex metacharacters so a query like "c++" cannot break the pattern.
+    const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const matcher = new RegExp(escaped, "i");
+
+    filter.$or = [{ title: matcher }, { content: matcher }];
   }
 
   // Pagination

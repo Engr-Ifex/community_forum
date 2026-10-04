@@ -59,6 +59,7 @@ export const updateDiscussionSchema = z
  * GET /discussions
  *
  * Supports:
+ * ?search=KEYWORD
  * ?category=CATEGORY_ID
  * ?page=1
  * ?limit=10
@@ -67,6 +68,12 @@ export const updateDiscussionSchema = z
  * ?sort=popular
  */
 export const discussionQuerySchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(200, "Search cannot exceed 200 characters")
+    .optional(),
+
   category: z
     .string()
     .regex(objectIdRegex, "Invalid category ID")
