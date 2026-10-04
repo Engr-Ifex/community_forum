@@ -27,9 +27,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-gitignore
-# Environment files
-.env
-.env.*
-!.env.example

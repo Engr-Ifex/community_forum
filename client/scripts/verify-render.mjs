@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { createElement as h, createContext } from "react";
+import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 const { transformWithOxc } = await import("vite");
@@ -49,15 +49,12 @@ const resolveSpecifier = (fromDir, spec) => {
   return candidates.find((c) => fs.existsSync(c) && fs.statSync(c).isFile()) ?? null;
 };
 
-/**
- * Replace certain modules entirely (the auth context and the API services) so
- * the tree can render without a server or a live session.
+/*
+ * The auth context and the API services are replaced wholesale (see
+ * `authStubFile` below) so the tree can render without a server or a live
+ * session.
  */
-const OVERRIDES = {
-  "src/context/AuthContext": "src/context/AuthContext.stub",
-};
-
-const buildModule = async (filePath, built = new Map(), aliases = {}) => {
+const buildModule = async (filePath, built = new Map()) => {
   const absolute = path.resolve(filePath);
 
   if (built.has(absolute)) return built.get(absolute);
@@ -96,7 +93,7 @@ const buildModule = async (filePath, built = new Map(), aliases = {}) => {
       continue;
     }
 
-    resolved.set(spec, await buildModule(target, built, aliases));
+    resolved.set(spec, await buildModule(target, built));
   }
 
   const rewritten = result.code.replace(importPattern, (match, pre, spec, post) => {
