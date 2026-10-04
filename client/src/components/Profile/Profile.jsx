@@ -1,567 +1,422 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import { useAuth } from "../../context/AuthContext";
+import { getUser, updateUser } from "../../services/users";
+import { buttonClass, ErrorState, icons, Notice, Skeleton } from "../common/ui";
 
-const Profile = () => {
-  const { user, updateUser } = useAuth();
+import Avatar from "./Avatar";
+import ProfileEditForm from "./ProfileEditForm";
 
-  const [isEditing, setIsEditing] = useState(false);
+const ChatIcon = icons.chat;
+const PlusIcon = icons.plus;
 
-  const [profilePicture, setProfilePicture] = useState("");
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [pronouns, setPronouns] = useState("");
-  const [gender, setGender] = useState("");
-  const [bio, setBio] = useState("");
-  const [links, setLinks] = useState([]);
+const formatDate = (value) => {
+  if (!value) return "";
 
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const date = new Date(value);
 
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
+  return Number.isNaN(date.getTime())
+    ? ""
+    : new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
+};
 
-    setProfilePicture(user.profilePicture || "");
-    setName(user.name || "");
-    setUsername(user.username || "");
-    setPronouns(user.pronouns || "");
-    setGender(user.gender || "");
-    setBio(user.bio || "");
-    setLinks(user.links || []);
-  }, [user]);
+const ProfileSkeletons = () => (
+  <div className="space-y-8">
+    <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className="flex items-start gap-5">
+        <Skeleton className="h-20 w-20 rounded-2xl" />
+        <div className="flex-1">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="mt-3 h-4 w-56" />
+          <Skeleton className="mt-4 h-4 w-full max-w-md" />
+        </div>
+      </div>
+    </div>
 
-  /*
-   * LOGGED-OUT PROFILE PAGE
-   *
-   * The Profile link is intentionally available to logged-out
-   * users. When they open it, they are asked to either log in
-   * or register.
-   */
-  if (!user) {
-    return (
-      <section className="mx-auto max-w-xl">
-        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-semibold text-slate-900">
-            Your Profile
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            You need to log in or register before you can view
-            and edit your profile.
-          </p>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center rounded-md bg-slate-900 px-5 py-3 text-sm font-medium text-white hover:bg-slate-800"
-            >
-              Log in
-            </Link>
-
-            <Link
-              to="/register"
-              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Register
-            </Link>
+    <div className="grid gap-6 lg:grid-cols-2">
+      {Array.from({ length: 2 }, (_, column) => (
+        <div key={column}>
+          <Skeleton className="h-6 w-40" />
+          <div className="mt-3 space-y-3">
+            {Array.from({ length: 3 }, (_, row) => (
+              <div key={row} className="rounded-lg border border-slate-200 bg-white p-4">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="mt-2 h-3 w-32" />
+              </div>
+            ))}
           </div>
         </div>
+      ))}
+    </div>
+  </div>
+);
+
+/**
+ * The signed-in user's own profile.
+ *
+ * Reads come from `GET /users/:id` using the id from AuthContext - that
+ * endpoint returns the user plus their discussions and replies in one call.
+ *
+ * Two details the API dictates:
+ * - the profile payload does NOT include `role` (the service selects a public
+ *   field list), so the role badge is read from AuthContext, which gets it from
+ *   `/auth/me`;
+ * - the activity lists carry raw author/category/discussion ids rather than
+ *   populated documents, so the lists render what is actually returned instead
+ *   of inventing a second round of fetches.
+ */
+const Profile = () => {
+  const { user: authUser, loading: authLoading, refreshUser } = useAuth();
+
+  // Mongoose serialises the key as `_id`; `id` is only a fallback.
+  const authUserId = authUser?._id ?? authUser?.id;
+
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  // Bumping this re-runs the load effect, which the retry button and the
+  // post-save refresh both need. Keeping one code path means the two can never
+  // drift apart.
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const reload = useCallback(() => {
+    setReloadToken((token) => token + 1);
+  }, []);
+
+  useEffect(() => {
+    // Wait for AuthContext to resolve before deciding there is no user, or a
+    // refresh would briefly render the signed-out state.
+    if (authLoading) return undefined;
+
+    if (!authUserId) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let ignoreResponse = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        // GET /users/:id returns { user, discussions, replies }.
+        const response = await getUser(authUserId);
+
+        if (!ignoreResponse) {
+          setProfile(response.data ?? null);
+        }
+      } catch (requestError) {
+        if (!ignoreResponse) {
+          setError(requestError.message);
+        }
+      } finally {
+        if (!ignoreResponse) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      ignoreResponse = true;
+    };
+  }, [authUserId, authLoading, reloadToken]);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timer = window.setTimeout(() => setNotice(""), 6000);
+
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  /**
+   * Saves through PATCH /users/:id, then refreshes AuthContext so the navbar
+   * and every other consumer pick up the new name/avatar immediately.
+   */
+  const handleSave = async (updates) => {
+    setIsSaving(true);
+
+    try {
+      await updateUser(authUserId, updates);
+
+      // refreshUser re-reads /auth/me, so the whole app sees the change.
+      await refreshUser();
+
+      setIsEditing(false);
+      setNotice("Your profile has been updated.");
+      reload();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <section>
+        <ProfileSkeletons />
       </section>
     );
   }
 
-  /*
-   * LOGGED-IN PROFILE
-   */
-
-  const displayName =
-    user.name ||
-    user.username ||
-    user.email?.split("@")[0] ||
-    "User";
-
-  const handleAddLink = () => {
-    setLinks([
-      ...links,
-      {
-        label: "",
-        url: "",
-      },
-    ]);
-  };
-
-  const handleRemoveLink = (indexToRemove) => {
-    setLinks(
-      links.filter((_, index) => index !== indexToRemove),
-    );
-  };
-
-  const handleLinkChange = (index, field, value) => {
-    setLinks(
-      links.map((link, linkIndex) =>
-        linkIndex === index
-          ? {
-              ...link,
-              [field]: value,
-            }
-          : link,
-      ),
-    );
-  };
-
-  const handleSave = (event) => {
-    event.preventDefault();
-
-    const trimmedName = name.trim();
-    const trimmedUsername = username.trim();
-
-    if (!trimmedName || !trimmedUsername) {
-      setError("Name and username are required.");
-      setSuccess("");
-      return;
-    }
-
-    const cleanedLinks = links
-      .map((link) => ({
-        label: link.label?.trim() || "",
-        url: link.url?.trim() || "",
-      }))
-      .filter((link) => link.url);
-
-    updateUser({
-      profilePicture: profilePicture.trim(),
-      name: trimmedName,
-      username: trimmedUsername,
-      pronouns: pronouns.trim(),
-      gender: gender.trim(),
-      bio: bio.trim(),
-      links: cleanedLinks,
-    });
-
-    setIsEditing(false);
-    setError("");
-    setSuccess("Profile updated successfully.");
-
-    setTimeout(() => {
-      setSuccess("");
-    }, 3000);
-  };
-
-  const handleCancel = () => {
-    setProfilePicture(user.profilePicture || "");
-    setName(user.name || "");
-    setUsername(user.username || "");
-    setPronouns(user.pronouns || "");
-    setGender(user.gender || "");
-    setBio(user.bio || "");
-    setLinks(user.links || []);
-
-    setIsEditing(false);
-    setError("");
-  };
-
-  return (
-    <section className="mx-auto max-w-3xl">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          My Profile
+  if (!authUser) {
+    return (
+      <section className="mx-auto max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          You are not signed in
         </h1>
 
-        <p className="mt-2 text-sm text-slate-600">
-          View and manage your profile information.
+        <p className="mt-3 text-slate-600">
+          Sign in to view and edit your profile.
         </p>
-      </header>
 
-      {success && (
-        <p
-          role="status"
-          className="mb-5 rounded-md border border-green-200 bg-green-50 p-3 text-sm font-medium text-green-700"
-        >
-          {success}
-        </p>
-      )}
+        <Link to="/login" className={buttonClass("primary", "md", "mt-6")}>
+          Log in
+        </Link>
+      </section>
+    );
+  }
 
-      {error && (
-        <p
-          role="alert"
-          className="mb-5 rounded-md border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700"
-        >
-          {error}
-        </p>
-      )}
+  if (error) {
+    return (
+      <ErrorState
+        className="mx-auto max-w-2xl"
+        title="Could not load your profile."
+        message={error}
+        onRetry={reload}
+      />
+    );
+  }
 
-      {!isEditing ? (
-        <>
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
-              {user.profilePicture ? (
-                <img
-                  src={user.profilePicture}
-                  alt={`${displayName}'s profile`}
-                  className="h-24 w-24 rounded-full object-cover"
-                />
-              ) : (
-                <div
-                  className="flex h-24 w-24 items-center justify-center rounded-full bg-slate-200 text-3xl font-semibold text-slate-600"
-                  aria-hidden="true"
-                >
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
-              )}
+  const profileUser = profile?.user ?? authUser;
+  const discussions = profile?.discussions ?? [];
+  const replies = profile?.replies ?? [];
 
-              <div>
-                <h2 className="text-2xl font-semibold text-slate-900">
-                  {displayName}
-                </h2>
+  // The profile payload omits role, so it comes from the session instead.
+  const role = authUser?.role ?? "user";
 
-                <p className="mt-1 text-sm text-slate-500">
-                  @{user.username}
-                </p>
+  if (isEditing) {
+    return (
+      <section className="mx-auto max-w-3xl">
+        {notice ? <Notice className="mb-6">{notice}</Notice> : null}
 
-                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-                  {user.bio || "No bio added yet."}
-                </p>
+        <ProfileEditForm
+          user={profileUser}
+          isSaving={isSaving}
+          onSubmit={handleSave}
+          onCancel={() => setIsEditing(false)}
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-8">
+      {notice ? (
+        <Notice onDismiss={() => setNotice("")}>{notice}</Notice>
+      ) : null}
+
+      <header className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-5">
+            <Avatar user={profileUser} />
+
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">
+                {profileUser?.name ?? "Profile"}
+              </h1>
+
+              {profileUser?.email ? (
+                <p className="mt-1 truncate text-slate-600">{profileUser.email}</p>
+              ) : null}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium capitalize text-slate-700">
+                  {role}
+                </span>
+
+                {profileUser?.createdAt ? (
+                  <span className="text-slate-500">
+                    Joined {formatDate(profileUser.createdAt)}
+                  </span>
+                ) : null}
               </div>
             </div>
+          </div>
 
-            <div className="mt-6 border-t border-slate-200 pt-5">
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className={buttonClass("secondary", "sm", "shrink-0")}
+          >
+            Edit profile
+          </button>
+        </div>
+
+        <div className="mt-5 border-t border-slate-100 pt-5">
+          {profileUser?.bio ? (
+            <p className="whitespace-pre-wrap leading-relaxed text-slate-700">
+              {profileUser.bio}
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500">
+              You have not added a bio yet.{" "}
               <button
                 type="button"
-                onClick={() => {
-                  setIsEditing(true);
-                  setSuccess("");
-                  setError("");
-                }}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                onClick={() => setIsEditing(true)}
+                className="font-medium text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
               >
-                Edit profile
+                Add one
               </button>
-            </div>
-          </section>
+              .
+            </p>
+          )}
+        </div>
+      </header>
 
-          <section className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div>
+          <div className="mb-3 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">
-              About
+              Your discussions
+              <span className="ml-2 text-sm font-normal text-slate-500">
+                {discussions.length}
+              </span>
             </h2>
 
-            <dl className="mt-5 space-y-4">
-              <div>
-                <dt className="text-sm font-medium text-slate-500">
-                  Name
-                </dt>
+            <Link to="/create-discussion" className={buttonClass("ghost", "sm")}>
+              <PlusIcon className="h-4 w-4" />
+              New
+            </Link>
+          </div>
 
-                <dd className="mt-1 text-sm text-slate-900">
-                  {user.name || "Not provided"}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-sm font-medium text-slate-500">
-                  Username
-                </dt>
-
-                <dd className="mt-1 text-sm text-slate-900">
-                  @{user.username}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-sm font-medium text-slate-500">
-                  Pronouns
-                </dt>
-
-                <dd className="mt-1 text-sm text-slate-900">
-                  {user.pronouns || "Not provided"}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-sm font-medium text-slate-500">
-                  Gender
-                </dt>
-
-                <dd className="mt-1 text-sm text-slate-900">
-                  {user.gender || "Not provided"}
-                </dd>
-              </div>
-
-              <div>
-                <dt className="text-sm font-medium text-slate-500">
-                  Bio
-                </dt>
-
-                <dd className="mt-1 text-sm leading-6 text-slate-700">
-                  {user.bio || "No bio added yet."}
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-semibold text-slate-900">
-              External Links
-            </h2>
-
-            {user.links?.length > 0 ? (
-              <ul className="mt-4 space-y-3">
-                {user.links.map((link, index) => (
-                  <li key={`${link.url}-${index}`}>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm font-medium text-slate-700 hover:underline"
-                    >
-                      {link.label || link.url}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-3 text-sm text-slate-500">
-                No external links added yet.
-              </p>
-            )}
-          </section>
-        </>
-      ) : (
-        <form
-          onSubmit={handleSave}
-          className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div className="space-y-5">
-            <div>
-              <label
-                htmlFor="profile-picture"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Profile picture URL
-              </label>
-
-              <input
-                id="profile-picture"
-                type="url"
-                value={profilePicture}
-                onChange={(event) =>
-                  setProfilePicture(event.target.value)
-                }
-                placeholder="https://example.com/photo.jpg"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="profile-name"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Name
-              </label>
-
-              <input
-                id="profile-name"
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="profile-username"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Username
-              </label>
-
-              <input
-                id="profile-username"
-                type="text"
-                value={username}
-                onChange={(event) =>
-                  setUsername(event.target.value)
-                }
-                required
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="profile-pronouns"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Pronouns
-              </label>
-
-              <input
-                id="profile-pronouns"
-                type="text"
-                value={pronouns}
-                onChange={(event) =>
-                  setPronouns(event.target.value)
-                }
-                placeholder="e.g. she/her"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="profile-gender"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Gender
-              </label>
-
-              <input
-                id="profile-gender"
-                type="text"
-                value={gender}
-                onChange={(event) =>
-                  setGender(event.target.value)
-                }
-                placeholder="Optional"
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="profile-bio"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                Bio
-              </label>
-
-              <textarea
-                id="profile-bio"
-                value={bio}
-                onChange={(event) => setBio(event.target.value)}
-                rows={5}
-                placeholder="Tell the community about yourself..."
-                className="w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900">
-                    External links
-                  </h2>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    Add links to your other websites or apps.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleAddLink}
-                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Add link
-                </button>
-              </div>
-
-              <div className="mt-4 space-y-4">
-                {links.map((link, index) => (
-                  <div
-                    key={index}
-                    className="rounded-md border border-slate-200 bg-slate-50 p-4"
+          {discussions.length > 0 ? (
+            <ul className="space-y-3">
+              {discussions.map((discussion) => (
+                <li key={discussion._id}>
+                  <Link
+                    to={`/discussions/${discussion._id}`}
+                    className="block rounded-lg border border-slate-200 bg-white p-4 transition hover:border-blue-300 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                   >
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label
-                          htmlFor={`link-label-${index}`}
-                          className="mb-2 block text-xs font-medium text-slate-600"
-                        >
-                          Label
-                        </label>
+                    <p className="font-medium text-slate-900">
+                      {discussion.title ?? "Untitled discussion"}
+                    </p>
 
-                        <input
-                          id={`link-label-${index}`}
-                          type="text"
-                          value={link.label}
-                          onChange={(event) =>
-                            handleLinkChange(
-                              index,
-                              "label",
-                              event.target.value,
-                            )
-                          }
-                          placeholder="Instagram"
-                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                        />
-                      </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                      {formatDate(discussion.createdAt) ? (
+                        <span>{formatDate(discussion.createdAt)}</span>
+                      ) : null}
 
-                      <div>
-                        <label
-                          htmlFor={`link-url-${index}`}
-                          className="mb-2 block text-xs font-medium text-slate-600"
-                        >
-                          URL
-                        </label>
+                      {discussion.views !== undefined ? (
+                        <span className="inline-flex items-center gap-1">
+                          <icons.eye className="h-3.5 w-3.5 text-slate-400" />
+                          {discussion.views}
+                        </span>
+                      ) : null}
 
-                        <input
-                          id={`link-url-${index}`}
-                          type="url"
-                          value={link.url}
-                          onChange={(event) =>
-                            handleLinkChange(
-                              index,
-                              "url",
-                              event.target.value,
-                            )
-                          }
-                          placeholder="https://instagram.com/username"
-                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                        />
-                      </div>
+                      {discussion.status && discussion.status !== "active" ? (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium capitalize text-amber-700">
+                          {discussion.status}
+                        </span>
+                      ) : null}
                     </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
+              <p className="text-sm text-slate-600">
+                You have not started any discussions yet.
+              </p>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveLink(index)}
-                      className="mt-3 text-sm font-medium text-red-600 hover:underline"
-                    >
-                      Remove link
-                    </button>
-                  </div>
-                ))}
-
-                {links.length === 0 && (
-                  <p className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                    No external links added.
-                  </p>
-                )}
-              </div>
+              <Link
+                to="/create-discussion"
+                className={buttonClass("primary", "sm", "mt-4")}
+              >
+                <PlusIcon className="h-4 w-4" />
+                Start a discussion
+              </Link>
             </div>
+          )}
+        </div>
+
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Your replies
+              <span className="ml-2 text-sm font-normal text-slate-500">
+                {replies.length}
+              </span>
+            </h2>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3 border-t border-slate-200 pt-5">
-            <button
-              type="submit"
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-            >
-              Save changes
-            </button>
+          {replies.length > 0 ? (
+            <ul className="space-y-3">
+              {replies.map((reply) => (
+                <li
+                  key={reply._id}
+                  className="rounded-lg border border-slate-200 bg-white p-4"
+                >
+                  <p className="line-clamp-3 whitespace-pre-wrap text-slate-700">
+                    {reply.content ?? "(empty reply)"}
+                  </p>
 
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+                    {formatDate(reply.createdAt) ? (
+                      <span>{formatDate(reply.createdAt)}</span>
+                    ) : null}
+
+                    {reply.status === "removed" ? (
+                      <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                        removed
+                      </span>
+                    ) : null}
+
+                    {/* The replies payload carries only the discussion id, not a
+                        title, so the link goes to the thread rather than
+                        guessing a name for it. */}
+                    {reply.discussion ? (
+                      <Link
+                        to={`/discussions/${reply.discussion}`}
+                        className="inline-flex items-center gap-1 font-medium text-blue-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                      >
+                        <ChatIcon className="h-3.5 w-3.5" />
+                        View thread
+                      </Link>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
+              <span
+                aria-hidden="true"
+                className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-400"
+              >
+                <ChatIcon className="h-5 w-5" />
+              </span>
+
+              <p className="mt-3 text-sm text-slate-600">
+                You have not posted any replies yet.
+              </p>
+
+              <Link to="/discussions" className={buttonClass("secondary", "sm", "mt-4")}>
+                Browse discussions
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   );
 };

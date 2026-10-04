@@ -1,5 +1,7 @@
 import { useId } from "react";
 
+import { buttonClass } from "../common/ui";
+
 function DeleteDiscussionConfirmation({
   onCancel,
   onConfirm,
@@ -37,7 +39,7 @@ function DeleteDiscussionConfirmation({
             type="button"
             onClick={onCancel}
             disabled={isDeleting}
-            className="rounded border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className={buttonClass("secondary", "md")}
           >
             Cancel
           </button>
@@ -45,7 +47,7 @@ function DeleteDiscussionConfirmation({
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="rounded bg-red-700 px-3 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className={buttonClass("danger", "md")}
           >
             {isDeleting ? "Deleting..." : "Delete discussion"}
           </button>
