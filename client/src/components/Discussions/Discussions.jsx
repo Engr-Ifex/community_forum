@@ -32,9 +32,13 @@ const Discussions = () => {
   const [sort, setSort] = useState("latest");
   const [page, setPage] = useState(1);
 
-  const [categories, setCategories] = useState([]);
-  const [discussions, setDiscussions] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const [fromCategory, setFromCategory] = useState(
+    location.state?.fromCategory ?? false,
+  );
+
+  const [isCreating, setIsCreating] = useState(
+    location.pathname === "/create-discussion",
+  );
 
   const [loading, setLoading] = useState(true);
   const [categoryError, setCategoryError] = useState("");
@@ -146,14 +150,23 @@ const Discussions = () => {
     setSearch(searchInput.trim());
   };
 
-  const handleCategoryChange = (event) => {
-    setPage(1);
-    setCategory(event.target.value);
-  };
+  const handleBack = () => {
+    setSelectedDiscussionId(null);
+    setFromHome(false);
+    setFromCategory(false);
+    setIsEditing(false);
 
-  const handleSortChange = (event) => {
-    setPage(1);
-    setSort(event.target.value);
+    if (fromCategory) {
+      navigate(-1);
+      return;
+    }
+
+    if (fromHome) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    navigate("/discussions", { replace: true });
   };
 
   const handleClearFilters = () => {
@@ -272,10 +285,10 @@ const Discussions = () => {
             onClick={handleClearFilters}
             className={buttonClass("secondary", "md")}
           >
-            Clear filters
+            Start a discussion
           </button>
-        </div>
-      </form>
+        </header>
+      )}
 
       <div className="mt-6" aria-live="polite">
         {loading ? <CardSkeletonList count={4} lines={2} /> : null}
@@ -364,5 +377,6 @@ const Discussions = () => {
     </section>
   );
 };
+
 
 export default Discussions;

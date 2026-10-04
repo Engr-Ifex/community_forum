@@ -148,6 +148,6 @@ const DiscussionCard = ({ discussion }) => {
       </div>
     </article>
   );
-};
+}
 
 export default DiscussionCard;

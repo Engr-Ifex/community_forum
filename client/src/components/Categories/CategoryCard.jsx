@@ -102,5 +102,6 @@ const CategoryCard = ({ category, actions = null, discussionCount = null }) => {
     </div>
   );
 };
+};
 
 export default CategoryCard;
