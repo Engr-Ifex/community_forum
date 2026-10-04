@@ -21,12 +21,7 @@ function DiscussionDetails({
   const discussionId =
     discussion.id ?? discussion._id;
 
-  const authorName =
-    typeof discussion.author === "string"
-      ? discussion.author
-      : discussion.author?.username ??
-        discussion.author?.name ??
-        "Unknown author";
+    if (!reply.trim()) return;
 
   const currentUserName =
     user?.username ??

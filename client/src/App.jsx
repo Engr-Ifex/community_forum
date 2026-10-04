@@ -20,28 +20,6 @@ import Navbar from "./components/common/Navbar";
 const App = () => {
   return (
     <AuthProvider>
-    <BrowserRouter>
-      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
-        <Navbar />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/discussions" element={<Discussions />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/categories/:id" element={<CategoryPage />} />
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/moderation" element={<Moderation />} />
-            <Route path="/admin" element={<Admin />} />
-          </Route>
-            <Route path="*" element={<Home />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </BrowserRouter>
       <BrowserRouter>
         <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
           <Navbar />
@@ -52,9 +30,13 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/discussions" element={<Discussions />} />
-              <Route path="/create-discussion" element={<Discussions />} />
               <Route path="/categories" element={<Categories />} />
+              <Route
+                path="/categories/:categoryId"
+                element={<CategoryPage />}
+              />
 
+              {/* Logged-in users only */}
               <Route element={<ProtectedRoute />}>
                 <Route
                   path="/create-discussion"
