@@ -24,7 +24,6 @@ import ErrorMessage from "../common/ErrorMessage";
  */
 const CreateDiscussion = () => {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("");
 
@@ -154,7 +153,6 @@ const CreateDiscussion = () => {
             Title
           </label>
 
-
           <input
             id="new-discussion-title"
             name="title"
@@ -228,7 +226,6 @@ const CreateDiscussion = () => {
           >
             Content
           </label>
-
 
           <textarea
             id="new-discussion-content"

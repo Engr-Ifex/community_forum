@@ -470,10 +470,6 @@ const DiscussionDetails = () => {
             No replies yet.{isLocked ? "" : " Be the first to respond."}
           </p>
         )}
-
-        {isAuthenticated && (
-          <ReplyForm onReply={onReply} />
-        )}
       </section>
 
       {actionError && !showDeleteConfirm ? (
