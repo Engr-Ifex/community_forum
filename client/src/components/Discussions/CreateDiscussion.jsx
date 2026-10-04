@@ -1,7 +1,9 @@
 import { useState } from "react";
+import categories from "../Categories/CategoryData";
 
 function CreateDiscussion({ onCreate, onCancel }) {
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
 
@@ -11,25 +13,38 @@ function CreateDiscussion({ onCreate, onCancel }) {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
-    if (!trimmedTitle || !trimmedContent) {
-      setError("Enter both a title and discussion content.");
+    if (!trimmedTitle || !category || !trimmedContent) {
+      setError("Enter a title, choose a category and add discussion content.");
       return;
     }
 
-    onCreate?.({ title: trimmedTitle, content: trimmedContent });
+    onCreate?.({
+      title: trimmedTitle,
+      category,
+      content: trimmedContent,
+    });
+
     setTitle("");
+    setCategory("");
     setContent("");
     setError("");
   };
 
   return (
     <section className="max-w-2xl">
-      <h2 className="text-2xl font-semibold text-slate-900">Create discussion</h2>
+      <h2 className="text-2xl font-semibold text-slate-900">
+        Create discussion
+      </h2>
+
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
-          <label htmlFor="new-discussion-title" className="mb-1 block text-sm font-medium text-slate-700">
+          <label
+            htmlFor="new-discussion-title"
+            className="mb-1 block text-sm font-medium text-slate-700"
+          >
             Title
           </label>
+
           <input
             id="new-discussion-title"
             name="title"
@@ -42,9 +57,39 @@ function CreateDiscussion({ onCreate, onCancel }) {
         </div>
 
         <div>
-          <label htmlFor="new-discussion-content" className="mb-1 block text-sm font-medium text-slate-700">
+          <label
+            htmlFor="new-discussion-category"
+            className="mb-1 block text-sm font-medium text-slate-700"
+          >
+            Category
+          </label>
+
+          <select
+            id="new-discussion-category"
+            name="category"
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            required
+            className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700"
+          >
+            <option value="">Choose a category</option>
+
+            {categories.map((item) => (
+              <option key={item.id} value={item.name}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label
+            htmlFor="new-discussion-content"
+            className="mb-1 block text-sm font-medium text-slate-700"
+          >
             Content
           </label>
+
           <textarea
             id="new-discussion-content"
             name="content"
@@ -57,15 +102,20 @@ function CreateDiscussion({ onCreate, onCancel }) {
           />
         </div>
 
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
             className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
-            Create discussion
+            Post discussion
           </button>
+
           {onCancel && (
             <button
               type="button"
