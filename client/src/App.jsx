@@ -6,6 +6,7 @@ import Admin from "./components/Admin/Admin";
 import Categories from "./components/Categories/Categories";
 import CategoryPage from "./components/Categories/CategoryPage";
 import Discussions from "./components/Discussions/Discussions";
+import DiscussionDetail from "./components/Discussions/DiscussionDetail";
 import Home from "./components/Home/Home";
 import Login from "./components/Login/Login";
 import Moderation from "./components/Moderation/Moderation";
