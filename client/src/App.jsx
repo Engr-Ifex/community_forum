@@ -6,6 +6,7 @@ import Admin from "./components/Admin/Admin";
 import Categories from "./components/Categories/Categories";
 import CategoryPage from "./components/Categories/CategoryPage";
 import Discussions from "./components/Discussions/Discussions";
+import DiscussionDetail from "./components/Discussions/DiscussionDetail";
 import Home from "./components/Home/Home";
 import Login from "./components/Login/Login";
 import Moderation from "./components/Moderation/Moderation";
@@ -17,7 +18,7 @@ import Navbar from "./components/common/Navbar";
 const App = () => {
   return (
     <AuthProvider>
-    <BrowserRouter>
+    {/* <BrowserRouter>
       <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
         <Navbar />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
@@ -38,7 +39,7 @@ const App = () => {
         </main>
         <Footer />
       </div>
-    </BrowserRouter>
+    </BrowserRouter> */}
       <BrowserRouter>
         <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
           <Navbar />
@@ -50,8 +51,9 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/discussions" element={<Discussions />} />
               <Route path="/create-discussion" element={<Discussions />} />
+              <Route path="/discussions/:id"element={<DiscussionDetail />}/>
               <Route path="/categories" element={<Categories />} />
-
+              <Route path="/categories/:id" element={<CategoryPage />} /> 
               <Route element={<ProtectedRoute />}>
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/moderation" element={<Moderation />} />

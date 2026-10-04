@@ -1,11 +1,4 @@
-import { useState } from "react"; import { useParams } from "react-router-dom";
-const Discussions = () => { const { id } = useParams(); const [reply, setReply] = useState("");
-const handleReply = (e) => { e.preventDefault();
-if (!reply.trim()) return;
-
-setReply("");
 import { useEffect, useState } from "react";
-
 import { getCategories } from "../../services/categories";
 import { getDiscussions } from "../../services/discussions";
 import DiscussionCard from "./DiscussionCard";
@@ -25,7 +18,7 @@ const Discussions = () => {
   const [categoryError, setCategoryError] = useState("");
   const [error, setError] = useState("");
 
-  // Load the category dropdown options when the page first opens.
+  // Load categories
   useEffect(() => {
     let ignoreResponse = false;
 
@@ -33,28 +26,30 @@ const Discussions = () => {
       try {
         const response = await getCategories();
 
-        // The API wrapper returns the server's response body.
         const categoryList = response.data?.categories;
 
         if (!ignoreResponse) {
-          setCategories(Array.isArray(categoryList) ? categoryList : []);
+          setCategories(
+            Array.isArray(categoryList) ? categoryList : []
+          );
         }
       } catch (requestError) {
         if (!ignoreResponse) {
-          setCategoryError(requestError.message);
+          setCategoryError(
+            requestError.message || "Failed to load categories"
+          );
         }
       }
     };
 
     loadCategories();
 
-    // Ignore the result if the page closes before the request finishes.
     return () => {
       ignoreResponse = true;
     };
   }, []);
 
-  // Load discussions whenever a filter, sort option, or page changes.
+  // Load discussions whenever filters/sort/page change
   useEffect(() => {
     let ignoreResponse = false;
 
@@ -71,25 +66,28 @@ const Discussions = () => {
           sort,
         });
 
-        // Expected backend response:
-        // { success, message, data: { discussions: [], pagination: {} } }
         const data = response.data ?? {};
         const discussionList = data.discussions;
         const pagination = data.pagination ?? {};
 
         if (!ignoreResponse) {
           setDiscussions(
-            Array.isArray(discussionList) ? discussionList : [],
+            Array.isArray(discussionList) ? discussionList : []
           );
 
           const pages = Number(pagination.totalPages);
-          setTotalPages(Number.isFinite(pages) && pages > 0 ? pages : 1);
+
+          setTotalPages(
+            Number.isFinite(pages) && pages > 0 ? pages : 1
+          );
         }
       } catch (requestError) {
         if (!ignoreResponse) {
           setDiscussions([]);
           setTotalPages(1);
-          setError(requestError.message);
+          setError(
+            requestError.message || "Failed to load discussions"
+          );
         }
       } finally {
         if (!ignoreResponse) {
@@ -108,7 +106,6 @@ const Discussions = () => {
   const handleSearchSubmit = (event) => {
     event.preventDefault();
 
-    // Apply the text in the search box and go back to the first page.
     setPage(1);
     setSearch(searchInput.trim());
   };
@@ -139,10 +136,12 @@ const Discussions = () => {
         </h1>
 
         <p className="mt-2 text-slate-600">
-          Search discussions, filter by category, and choose how they are sorted.
+          Search discussions, filter by category, and choose how they
+          are sorted.
         </p>
       </div>
 
+      {/* Filters */}
       <form
         onSubmit={handleSearchSubmit}
         className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-4"
@@ -182,7 +181,10 @@ const Discussions = () => {
             <option value="">All categories</option>
 
             {categories.map((item) => (
-              <option key={item._id || item.slug} value={item.slug}>
+              <option
+                key={item._id}
+                value={item._id}
+              >
                 {item.name}
               </option>
             ))}
@@ -233,6 +235,7 @@ const Discussions = () => {
         </div>
       </form>
 
+      {/* Discussions */}
       <div className="mt-6" aria-live="polite">
         {loading ? (
           <p className="rounded-lg bg-white p-5 text-slate-600">
@@ -242,14 +245,18 @@ const Discussions = () => {
 
         {!loading && error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-800">
-            <p className="font-medium">Could not load discussions.</p>
+            <p className="font-medium">
+              Could not load discussions.
+            </p>
+
             <p className="mt-1 text-sm">{error}</p>
           </div>
         ) : null}
 
         {!loading && !error && discussions.length === 0 ? (
           <p className="rounded-lg border border-slate-200 bg-white p-5 text-slate-600">
-            No discussions found. Try another search or clear the filters.
+            No discussions found. Try another search or clear the
+            filters.
           </p>
         ) : null}
 
@@ -265,13 +272,16 @@ const Discussions = () => {
         ) : null}
       </div>
 
+      {/* Pagination */}
       <nav
         aria-label="Discussion pages"
         className="mt-6 flex items-center justify-between"
       >
         <button
           type="button"
-          onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+          onClick={() =>
+            setPage((currentPage) => Math.max(1, currentPage - 1))
+          }
           disabled={page <= 1 || loading}
           className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -285,7 +295,9 @@ const Discussions = () => {
         <button
           type="button"
           onClick={() =>
-            setPage((currentPage) => Math.min(totalPages, currentPage + 1))
+            setPage((currentPage) =>
+              Math.min(totalPages, currentPage + 1)
+            )
           }
           disabled={page >= totalPages || loading}
           className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
@@ -296,70 +308,5 @@ const Discussions = () => {
     </section>
   );
 };
-return ( <section> <h1 className="text-3xl font-bold text-slate-900"> Discussion </h1>
-  <div className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
-    <h2 className="text-xl font-semibold">
-      Original Post
-    </h2>
 
-    <p className="mt-3 text-slate-600">
-      Discussion ID: {id || "No discussion selected"}
-    </p>
-  </div>
-
-  <div className="mt-6">
-    <h2 className="text-2xl font-semibold">
-      Replies
-    </h2>
-
-    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-5">
-      <p className="font-medium">User</p>
-
-      <p className="mt-2 text-slate-600">
-        Replies will appear here.
-      </p>
-
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          className="rounded-md border px-3 py-2"
-        >
-          Edit
-        </button>
-
-        <button
-          type="button"
-          className="rounded-md bg-red-600 px-3 py-2 text-white"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <form
-    onSubmit={handleReply}
-    className="mt-6 rounded-lg border border-slate-200 bg-white p-5"
-  >
-    <h2 className="text-xl font-semibold">
-      Reply
-    </h2>
-
-    <textarea
-      value={reply}
-      onChange={(e) => setReply(e.target.value)}
-      placeholder="Write your reply..."
-      rows={4}
-      className="mt-4 w-full rounded-md border border-slate-300 p-3"
-    />
-
-    <button
-      type="submit"
-      className="mt-3 rounded-md bg-slate-900 px-5 py-2 text-white"
-    >
-      Reply
-    </button>
-  </form>
-</section>
-); };
 export default Discussions;
