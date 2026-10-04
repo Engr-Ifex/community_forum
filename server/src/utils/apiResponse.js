@@ -12,4 +12,14 @@ export const errorResponse = (res, { statusCode = HTTP_STATUS.INTERNAL_SERVER_ER
   return res.status(statusCode).json(body);
 };
 
-export const createdResponse = (res, options = {}) => successResponse(res, { ...options, statusCode: HTTP_STATUS.CREATED });
+/**
+ * 201 helper.
+ *
+ * `statusCode` is passed through explicitly rather than relying on a
+ * `res.status()` call happening earlier: successResponse always applies its own
+ * status, so this is the only way to land on 201. Callers that need to attach
+ * headers (e.g. the auth cookie) must do so *before* calling this, because
+ * res.json() is what actually flushes the response.
+ */
+export const createdResponse = (res, options = {}) =>
+  successResponse(res, { ...options, statusCode: HTTP_STATUS.CREATED });

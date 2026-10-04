@@ -1,278 +1,246 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import DiscussionCard from "../Discussions/DiscussionCard";
-import CategoryCard from "../Categories/CategoryCard";
-import discussions from "../Discussions/DiscussionData";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-const categories = [
-  {
-    id: 1,
-    name: "General discussions and conversations",
-    description:
-      "General discussions, personal projects and everyday conversations.",
-  },
-  {
-    id: 2,
-    name: "Lifestyle & Happiness",
-    description:
-      "Talk about happiness, hobbies, experiences and things that make life enjoyable.",
-  },
-  {
-    id: 3,
-    name: "Learning & Education",
-    description:
-      "Learning, education, skills development and academic discussions.",
-  },
-  {
-    id: 4,
-    name: "Advice & Life Lessons",
-    description:
-      "Share advice, experiences, lessons and useful perspectives on life.",
-  },
-  {
-    id: 5,
-    name: "Science & Technology",
-    description:
-      "Technology, programming, gadgets, science and innovation.",
-  },
-  {
-    id: 6,
-    name: "Goals & Personal Development",
-    description:
-      "Discuss personal goals, self-improvement, education and development.",
-  },
-  {
-    id: 7,
-    name: "Entertainment",
-    description:
-      "Movies, television, music and other forms of entertainment.",
-  },
-  {
-    id: 8,
-    name: "Games",
-    description:
-      "Video games, mobile games, console gaming and gaming culture.",
-  },
-  {
-    id: 9,
-    name: "Business & Finance",
-    description:
-      "Business, budgeting, saving, personal finance and money management.",
-  },
-  {
-    id: 10,
-    name: "News & Politics",
-    description:
-      "Current events, news and political discussions.",
-  },
-  {
-    id: 11,
-    name: "Fashion, Beauty & Lifestyle",
-    description:
-      "Fashion trends, beauty, personal style and lifestyle topics.",
-  },
-  {
-    id: 12,
-    name: "Anime",
-    description:
-      "Anime, manga, Japanese animation and recommendations.",
-  },
-  {
-    id: 13,
-    name: "Nature",
-    description:
-      "Animals, plants, the environment and beautiful natural places.",
-  },
-  {
-    id: 14,
-    name: "Relationships & Dating",
-    description:
-      "Relationships, dating, friendships, communication and social connections.",
-  },
-  {
-    id: 15,
-    name: "Food & Cooking",
-    description:
-      "Favourite meals, recipes, cooking techniques and food experiences.",
-  },
-  {
-    id: 16,
-    name: "Stocks & Investments",
-    description:
-      "Stocks, investing strategies, financial markets and investment education.",
-  },
-  {
-    id: 17,
-    name: "Crypto & Forex",
-    description:
-      "Cryptocurrency, forex, currency markets and financial market discussions.",
-  },
-  {
-    id: 18,
-    name: "History & Culture",
-    description:
-      "Historical events, cultures, traditions and heritage.",
-  },
-  {
-    id: 19,
-    name: "Travel & Tourism",
-    description:
-      "Travel destinations, tourism, holidays and travel experiences.",
-  },
-  {
-    id: 20,
-    name: "Auto Hub & Auto Talk",
-    description:
-      "Cars, motorcycles, maintenance, modifications and automotive discussions.",
-  },
-];
+import { useAuth } from "../../context/AuthContext";
+import { getCategories } from "../../services/categories";
+import { getDiscussions } from "../../services/discussions";
+import { buttonClass, EmptyState, ErrorState, icons, Skeleton } from "../common/ui";
+import CategoryTile from "./CategoryTile";
+import FeatureHighlights from "./FeatureHighlights";
+import FinalCta from "./FinalCta";
+import Hero from "./Hero";
+import RecentDiscussionCard from "./RecentDiscussionCard";
 
-const discussionsPerPage = 5;
+const RECENT_LIMIT = 6;
+const CATEGORY_LIMIT = 8;
 
+const ArrowIcon = icons.arrowRight;
+const PlusIcon = icons.plus;
+
+/** Placeholder rows while the recent-discussions request is in flight. */
+const DiscussionSkeletons = () => (
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {Array.from({ length: 3 }, (_, index) => (
+      <div
+        key={index}
+        className="rounded-xl border border-slate-200 bg-white p-5"
+      >
+        <Skeleton className="h-5 w-24 rounded-full" />
+        <Skeleton className="mt-4 h-5 w-4/5" />
+        <Skeleton className="mt-3 h-4 w-full" />
+        <Skeleton className="mt-2 h-4 w-2/3" />
+        <div className="mt-5 flex items-center gap-3">
+          <Skeleton className="h-6 w-6 rounded-full" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const CategorySkeletons = () => (
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {Array.from({ length: 4 }, (_, index) => (
+      <div key={index} className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="flex items-start gap-4">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <div className="flex-1">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="mt-2 h-3 w-full" />
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+/** Small heading row with an optional "view all" affordance. */
+const SectionHeading = ({ title, description, to, linkLabel }) => (
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        {title}
+      </h2>
+
+      {description ? (
+        <p className="mt-2 text-slate-600">{description}</p>
+      ) : null}
+    </div>
+
+    {to ? (
+      <Link
+        to={to}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg text-sm font-semibold text-blue-700 transition hover:text-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      >
+        {linkLabel}
+        <ArrowIcon className="h-4 w-4" />
+      </Link>
+    ) : null}
+  </div>
+);
+
+/**
+ * Public landing page.
+ *
+ * Both sections below are fed by the real API - there is no local fixture data
+ * on this page. The two requests run in parallel and are tracked separately, so
+ * a failure in one does not blank out the other.
+ */
 const Home = () => {
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const { isAuthenticated } = useAuth();
 
-  const filteredDiscussions = discussions.filter((discussion) => {
-    const search = searchTerm.toLowerCase();
+  const [discussions, setDiscussions] = useState([]);
+  const [categories, setCategories] = useState([]);
 
-    return (
-      discussion.title.toLowerCase().includes(search) ||
-      discussion.content.toLowerCase().includes(search) ||
-      discussion.author.toLowerCase().includes(search)
-    );
-  });
+  const [discussionsLoading, setDiscussionsLoading] = useState(true);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredDiscussions.length / discussionsPerPage),
-  );
+  const [discussionsError, setDiscussionsError] = useState("");
+  const [categoriesError, setCategoriesError] = useState("");
 
-  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const loadDiscussions = useCallback(async () => {
+    setDiscussionsLoading(true);
+    setDiscussionsError("");
 
-  const startIndex = (safeCurrentPage - 1) * discussionsPerPage;
+    try {
+      const response = await getDiscussions({
+        limit: RECENT_LIMIT,
+        sort: "latest",
+      });
 
-  const currentDiscussions = filteredDiscussions.slice(
-    startIndex,
-    startIndex + discussionsPerPage,
-  );
+      const list = response.data?.discussions;
+      setDiscussions(Array.isArray(list) ? list : []);
+    } catch (requestError) {
+      setDiscussions([]);
+      setDiscussionsError(requestError.message);
+    } finally {
+      setDiscussionsLoading(false);
+    }
+  }, []);
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1);
-  };
+  const loadCategories = useCallback(async () => {
+    setCategoriesLoading(true);
+    setCategoriesError("");
 
-  const handlePageChange = (page) => {
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
-  };
+    try {
+      const response = await getCategories();
+      const list = response.data?.categories;
+      setCategories(Array.isArray(list) ? list : []);
+    } catch (requestError) {
+      setCategories([]);
+      setCategoriesError(requestError.message);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
 
-  const handleViewDiscussion = (id) => {
-    navigate("/discussions", {
-      state: {
-        discussionId: id,
-      },
-    });
-  };
+  // `loadDiscussions` / `loadCategories` write their state after an `await`, so
+  // nothing is set synchronously here - the rule flags the call site anyway,
+  // matching the same advisory warning already present in Moderation/Admin.
+  useEffect(() => {
+    loadDiscussions();
+    loadCategories();
+  }, [loadDiscussions, loadCategories]);
 
   return (
-    <section>
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <input
-          type="search"
-          placeholder="Search discussions..."
-          value={searchTerm}
-          onChange={handleSearch}
-          className="flex-1 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500"
+    <>
+      <Hero />
+
+      <FeatureHighlights />
+
+      {/* Recent discussions */}
+      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+        <SectionHeading
+          title="Recent discussions"
+          description="What the community is talking about right now."
+          to="/discussions"
+          linkLabel="All discussions"
         />
 
-        <Link
-          to="/create-discussion"
-          className="rounded-md bg-slate-900 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-slate-700"
-        >
-          + Create Discussion
-        </Link>
-      </div>
+        <div className="mt-8" aria-live="polite">
+          {discussionsLoading ? <DiscussionSkeletons /> : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <h1 className="mb-4 text-2xl font-bold text-slate-900">
-            Recent Discussions
-          </h1>
+          {!discussionsLoading && discussionsError ? (
+            <ErrorState
+              title="We could not load discussions."
+              message={discussionsError}
+              onRetry={loadDiscussions}
+            />
+          ) : null}
 
-          <div className="space-y-4">
-            {currentDiscussions.length > 0 ? (
-              currentDiscussions.map((discussion) => (
-                <DiscussionCard
-                  key={discussion.id}
+          {!discussionsLoading && !discussionsError && discussions.length === 0 ? (
+            <EmptyState
+              icon={PlusIcon}
+              title="No discussions yet"
+              description="This forum is waiting for its first conversation. Be the one who starts it."
+            >
+              <Link
+                to={isAuthenticated ? "/create-discussion" : "/register"}
+                className={buttonClass("primary", "md")}
+              >
+                {isAuthenticated ? "Start a discussion" : "Join to start one"}
+              </Link>
+            </EmptyState>
+          ) : null}
+
+          {!discussionsLoading && !discussionsError && discussions.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {discussions.map((discussion) => (
+                <RecentDiscussionCard
+                  key={discussion._id ?? discussion.id}
                   discussion={discussion}
-                  onView={handleViewDiscussion}
                 />
-              ))
-            ) : (
-              <p className="rounded-md border border-slate-200 bg-white p-5 text-sm text-slate-500">
-                No discussions found.
-              </p>
-            )}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="mt-8 flex justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => handlePageChange(safeCurrentPage - 1)}
-                disabled={safeCurrentPage === 1}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                ←
-              </button>
-
-              {Array.from(
-                { length: totalPages },
-                (_, index) => index + 1,
-              ).map((page) => (
-                <button
-                  key={page}
-                  type="button"
-                  onClick={() => handlePageChange(page)}
-                  className={`rounded-md px-3 py-2 text-sm ${
-                    safeCurrentPage === page
-                      ? "bg-slate-900 text-white"
-                      : "border border-slate-300 bg-white hover:bg-slate-100"
-                  }`}
-                >
-                  {page}
-                </button>
               ))}
-
-              <button
-                type="button"
-                onClick={() => handlePageChange(safeCurrentPage + 1)}
-                disabled={safeCurrentPage === totalPages}
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                →
-              </button>
             </div>
-          )}
+          ) : null}
         </div>
+      </section>
 
-        <aside>
-          <h2 className="mb-4 text-xl font-bold text-slate-900">
-            Categories
-          </h2>
+      {/* Popular categories */}
+      <section className="border-y border-slate-200 bg-slate-50/70">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <SectionHeading
+            title="Browse by category"
+            description="Pick a topic and see where the conversation goes."
+            to="/categories"
+            linkLabel="All categories"
+          />
 
-          <div className="rounded-md border border-slate-200 bg-white p-2">
-            {categories.map((category) => (
-              <CategoryCard
-                key={category.id}
-                category={category}
+          <div className="mt-8" aria-live="polite">
+            {categoriesLoading ? <CategorySkeletons /> : null}
+
+            {!categoriesLoading && categoriesError ? (
+              <ErrorState
+                title="We could not load categories."
+                message={categoriesError}
+                onRetry={loadCategories}
               />
-            ))}
+            ) : null}
+
+            {!categoriesLoading && !categoriesError && categories.length === 0 ? (
+              <EmptyState
+                icon={icons.grid}
+                title="No categories yet"
+                description="Categories organise the forum into topics. An administrator can add the first ones."
+              />
+            ) : null}
+
+            {!categoriesLoading && !categoriesError && categories.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {categories.slice(0, CATEGORY_LIMIT).map((category) => (
+                  <CategoryTile
+                    key={category._id ?? category.id}
+                    category={category}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
-        </aside>
-      </div>
-    </section>
+        </div>
+      </section>
+
+      <FinalCta />
+    </>
   );
 };
 

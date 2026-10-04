@@ -24,6 +24,7 @@ export const HTTP_STATUS = Object.freeze({
 export const API_MESSAGES = Object.freeze({
   API_ROOT: "Community Forum API",
   HEALTH_OK: "Community Forum API is running",
+  HEALTH_DEGRADED: "Community Forum API is running but the database is unavailable",
   ROUTE_NOT_FOUND: "Route not found",
   VALIDATION_FAILED: "Validation failed",
   TOO_MANY_REQUESTS: "Too many requests, please try again later",

@@ -1,10 +1,31 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
+import { useAuth } from "../../context/AuthContext";
 import { getCategories } from "../../services/categories";
 import { getDiscussions } from "../../services/discussions";
+import {
+  buttonClass,
+  CardSkeletonList,
+  EmptyState,
+  ErrorState,
+  icons,
+  inputClass,
+  labelClass,
+  Notice,
+  PageHeader,
+  selectClass,
+} from "../common/ui";
 import DiscussionCard from "./DiscussionCard";
 
+const PlusIcon = icons.plus;
+const ChatIcon = icons.chat;
+
 const Discussions = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -18,6 +39,24 @@ const Discussions = () => {
   const [loading, setLoading] = useState(true);
   const [categoryError, setCategoryError] = useState("");
   const [error, setError] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
+
+  // A notice handed over by the detail page after a delete (or another route).
+  const [notice, setNotice] = useState(location.state?.notice ?? "");
+
+  // Consume the notice exactly once, so a later refresh does not re-show it and
+  // the message is not baked into the history entry.
+  useEffect(() => {
+    if (!location.state?.notice) return;
+
+    navigate(location.pathname, { replace: true, state: null });
+
+    // Auto-dismiss after a few seconds; the text stays available for a11y via
+    // role="status" while it is on screen.
+    const timer = setTimeout(() => setNotice(""), 6000);
+
+    return () => clearTimeout(timer);
+  }, [location.state, location.pathname, navigate]);
 
   // Load the category dropdown options when the page first opens.
   useEffect(() => {
@@ -97,7 +136,7 @@ const Discussions = () => {
     return () => {
       ignoreResponse = true;
     };
-  }, [search, category, page, sort]);
+  }, [search, category, page, sort, reloadToken]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
@@ -125,27 +164,47 @@ const Discussions = () => {
     setPage(1);
   };
 
+  // Bumping this re-runs the load effect with the same filters - used by the
+  // error state's "Try again" button.
+  const retry = () => {
+    setPage(1);
+    setReloadToken((token) => token + 1);
+  };
+
+  const hasActiveFilters =
+    Boolean(search) || Boolean(category) || sort !== "latest";
+
   return (
     <section>
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Discussions
-        </h1>
+      <PageHeader
+        title="Discussions"
+        description="Search discussions, filter by category, and choose how they are sorted."
+      >
+        {/* Creating requires a session; send guests to register instead. */}
+        {!authLoading ? (
+          <Link
+            to={isAuthenticated ? "/create-discussion" : "/login"}
+            state={isAuthenticated ? undefined : { from: { pathname: "/create-discussion" } }}
+            className={buttonClass("primary", "md")}
+          >
+            <PlusIcon className="h-4 w-4" />
+            New discussion
+          </Link>
+        ) : null}
+      </PageHeader>
 
-        <p className="mt-2 text-slate-600">
-          Search discussions, filter by category, and choose how they are sorted.
-        </p>
-      </div>
+      {notice ? (
+        <Notice className="mt-6" onDismiss={() => setNotice("")}>
+          {notice}
+        </Notice>
+      ) : null}
 
       <form
         onSubmit={handleSearchSubmit}
         className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-4"
       >
         <div className="lg:col-span-2">
-          <label
-            htmlFor="discussion-search"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="discussion-search" className={`mb-1 ${labelClass}`}>
             Search
           </label>
 
@@ -155,15 +214,12 @@ const Discussions = () => {
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="Search discussions..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            className={inputClass()}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="discussion-category"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="discussion-category" className={`mb-1 ${labelClass}`}>
             Category
           </label>
 
@@ -171,12 +227,12 @@ const Discussions = () => {
             id="discussion-category"
             value={category}
             onChange={handleCategoryChange}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            className={selectClass()}
           >
             <option value="">All categories</option>
 
             {categories.map((item) => (
-              <option key={item._id || item.slug} value={item.slug}>
+              <option key={item._id || item.slug} value={item._id}>
                 {item.name}
               </option>
             ))}
@@ -190,10 +246,7 @@ const Discussions = () => {
         </div>
 
         <div>
-          <label
-            htmlFor="discussion-sort"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
+          <label htmlFor="discussion-sort" className={`mb-1 ${labelClass}`}>
             Sort by
           </label>
 
@@ -201,7 +254,7 @@ const Discussions = () => {
             id="discussion-sort"
             value={sort}
             onChange={handleSortChange}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            className={selectClass()}
           >
             <option value="latest">Latest</option>
             <option value="oldest">Oldest</option>
@@ -210,17 +263,14 @@ const Discussions = () => {
         </div>
 
         <div className="flex flex-wrap items-end gap-2 lg:col-span-4">
-          <button
-            type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-          >
+          <button type="submit" className={buttonClass("primary", "md")}>
             Search
           </button>
 
           <button
             type="button"
             onClick={handleClearFilters}
-            className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            className={buttonClass("secondary", "md")}
           >
             Clear filters
           </button>
@@ -228,30 +278,54 @@ const Discussions = () => {
       </form>
 
       <div className="mt-6" aria-live="polite">
-        {loading ? (
-          <p className="rounded-lg bg-white p-5 text-slate-600">
-            Loading discussions...
-          </p>
-        ) : null}
+        {loading ? <CardSkeletonList count={4} lines={2} /> : null}
 
         {!loading && error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-800">
-            <p className="font-medium">Could not load discussions.</p>
-            <p className="mt-1 text-sm">{error}</p>
-          </div>
+          <ErrorState
+            title="Could not load discussions."
+            message={error}
+            onRetry={retry}
+          />
         ) : null}
 
         {!loading && !error && discussions.length === 0 ? (
-          <p className="rounded-lg border border-slate-200 bg-white p-5 text-slate-600">
-            No discussions found. Try another search or clear the filters.
-          </p>
+          <EmptyState
+            icon={hasActiveFilters ? icons.grid : ChatIcon}
+            title={
+              hasActiveFilters
+                ? "No discussions match those filters"
+                : "No discussions yet"
+            }
+            description={
+              hasActiveFilters
+                ? "Try a different search term, or clear the filters to see everything."
+                : "This forum is waiting for its first conversation."
+            }
+          >
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className={buttonClass("secondary", "md")}
+              >
+                Clear filters
+              </button>
+            ) : (
+              <Link
+                to={isAuthenticated ? "/create-discussion" : "/register"}
+                className={buttonClass("primary", "md")}
+              >
+                {isAuthenticated ? "Start a discussion" : "Join to start one"}
+              </Link>
+            )}
+          </EmptyState>
         ) : null}
 
         {!loading && !error && discussions.length > 0 ? (
           <div className="space-y-4">
             {discussions.map((discussion) => (
               <DiscussionCard
-                key={discussion._id}
+                key={discussion._id ?? discussion.id}
                 discussion={discussion}
               />
             ))}
@@ -267,7 +341,7 @@ const Discussions = () => {
           type="button"
           onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
           disabled={page <= 1 || loading}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          className={buttonClass("secondary", "md", "disabled:opacity-50")}
         >
           Previous
         </button>
@@ -282,7 +356,7 @@ const Discussions = () => {
             setPage((currentPage) => Math.min(totalPages, currentPage + 1))
           }
           disabled={page >= totalPages || loading}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          className={buttonClass("secondary", "md", "disabled:opacity-50")}
         >
           Next
         </button>
