@@ -1,148 +1,41 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import DiscussionCard from "../Discussions/DiscussionCard";
 import CategoryCard from "../Categories/CategoryCard";
+import categories from "../Categories/CategoryData";
 import discussions from "../Discussions/DiscussionData";
-
-const categories = [
-  {
-    id: 1,
-    name: "General discussions and conversations",
-    description:
-      "General discussions, personal projects and everyday conversations.",
-  },
-  {
-    id: 2,
-    name: "Lifestyle & Happiness",
-    description:
-      "Talk about happiness, hobbies, experiences and things that make life enjoyable.",
-  },
-  {
-    id: 3,
-    name: "Learning & Education",
-    description:
-      "Learning, education, skills development and academic discussions.",
-  },
-  {
-    id: 4,
-    name: "Advice & Life Lessons",
-    description:
-      "Share advice, experiences, lessons and useful perspectives on life.",
-  },
-  {
-    id: 5,
-    name: "Science & Technology",
-    description:
-      "Technology, programming, gadgets, science and innovation.",
-  },
-  {
-    id: 6,
-    name: "Goals & Personal Development",
-    description:
-      "Discuss personal goals, self-improvement, education and development.",
-  },
-  {
-    id: 7,
-    name: "Entertainment",
-    description:
-      "Movies, television, music and other forms of entertainment.",
-  },
-  {
-    id: 8,
-    name: "Games",
-    description:
-      "Video games, mobile games, console gaming and gaming culture.",
-  },
-  {
-    id: 9,
-    name: "Business & Finance",
-    description:
-      "Business, budgeting, saving, personal finance and money management.",
-  },
-  {
-    id: 10,
-    name: "News & Politics",
-    description:
-      "Current events, news and political discussions.",
-  },
-  {
-    id: 11,
-    name: "Fashion, Beauty & Lifestyle",
-    description:
-      "Fashion trends, beauty, personal style and lifestyle topics.",
-  },
-  {
-    id: 12,
-    name: "Anime",
-    description:
-      "Anime, manga, Japanese animation and recommendations.",
-  },
-  {
-    id: 13,
-    name: "Nature",
-    description:
-      "Animals, plants, the environment and beautiful natural places.",
-  },
-  {
-    id: 14,
-    name: "Relationships & Dating",
-    description:
-      "Relationships, dating, friendships, communication and social connections.",
-  },
-  {
-    id: 15,
-    name: "Food & Cooking",
-    description:
-      "Favourite meals, recipes, cooking techniques and food experiences.",
-  },
-  {
-    id: 16,
-    name: "Stocks & Investments",
-    description:
-      "Stocks, investing strategies, financial markets and investment education.",
-  },
-  {
-    id: 17,
-    name: "Crypto & Forex",
-    description:
-      "Cryptocurrency, forex, currency markets and financial market discussions.",
-  },
-  {
-    id: 18,
-    name: "History & Culture",
-    description:
-      "Historical events, cultures, traditions and heritage.",
-  },
-  {
-    id: 19,
-    name: "Travel & Tourism",
-    description:
-      "Travel destinations, tourism, holidays and travel experiences.",
-  },
-  {
-    id: 20,
-    name: "Auto Hub & Auto Talk",
-    description:
-      "Cars, motorcycles, maintenance, modifications and automotive discussions.",
-  },
-];
 
 const discussionsPerPage = 5;
 
 const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState(
+    location.state?.category || "",
+  );
+
+  useEffect(() => {
+    setSelectedCategory(location.state?.category || "");
+    setCurrentPage(1);
+  }, [location.state]);
 
   const filteredDiscussions = discussions.filter((discussion) => {
-    const search = searchTerm.toLowerCase();
+  const search = searchTerm.toLowerCase();
 
-    return (
-      discussion.title.toLowerCase().includes(search) ||
-      discussion.content.toLowerCase().includes(search) ||
-      discussion.author.toLowerCase().includes(search)
-    );
-  });
+  const matchesSearch =
+    discussion.title.toLowerCase().includes(search) ||
+    discussion.content.toLowerCase().includes(search) ||
+    discussion.author.toLowerCase().includes(search) ||
+    discussion.category.toLowerCase().includes(search);
+
+  const matchesCategory =
+    !selectedCategory || discussion.category === selectedCategory;
+
+  return matchesSearch && matchesCategory;
+});
 
   const totalPages = Math.max(
     1,
@@ -168,10 +61,20 @@ const Home = () => {
   };
 
   const handleViewDiscussion = (id) => {
-    navigate("/discussions", {
-      state: {
-        discussionId: id,
-      },
+  navigate("/discussions", {
+    state: {
+      discussionId: id,
+      fromHome: true,
+    },
+  });
+};
+
+  const handleShowAll = () => {
+    setSelectedCategory("");
+    setCurrentPage(1);
+    navigate("/", {
+      replace: true,
+      state: {},
     });
   };
 
@@ -196,9 +99,29 @@ const Home = () => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <h1 className="mb-4 text-2xl font-bold text-slate-900">
-            Recent Discussions
-          </h1>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {selectedCategory || "Recent Discussions"}
+              </h1>
+
+              {selectedCategory && (
+                <p className="mt-1 text-sm text-slate-500">
+                  Discussions in this category
+                </p>
+              )}
+            </div>
+
+            {selectedCategory && (
+              <button
+                type="button"
+                onClick={handleShowAll}
+                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                All Discussions
+              </button>
+            )}
+          </div>
 
           <div className="space-y-4">
             {currentDiscussions.length > 0 ? (
@@ -262,7 +185,17 @@ const Home = () => {
             Categories
           </h2>
 
-          <div className="rounded-md border border-slate-200 bg-white p-2">
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={handleShowAll}
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              All Discussions
+            </button>
+          </div>
+
+          <div className="grid gap-3">
             {categories.map((category) => (
               <CategoryCard
                 key={category.id}

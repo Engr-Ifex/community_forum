@@ -1,310 +1,290 @@
 import { useEffect, useState } from "react";
-import { getCategories } from "../../services/categories";
-import { getDiscussions } from "../../services/discussions";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { useAuth } from "../../context/AuthContext";
+
+import CreateDiscussion from "./CreateDiscussion";
 import DiscussionCard from "./DiscussionCard";
+import DiscussionDetails from "./DiscussionDetails";
+import EditDiscussion from "./EditDiscussion";
+import initialDiscussions from "./DiscussionData";
+
+const getDiscussionId = (discussion) =>
+  discussion.id ?? discussion._id;
 
 const Discussions = () => {
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
-  const [sort, setSort] = useState("latest");
-  const [page, setPage] = useState(1);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-  const [categories, setCategories] = useState([]);
-  const [discussions, setDiscussions] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const [discussions, setDiscussions] = useState(initialDiscussions);
 
-  const [loading, setLoading] = useState(true);
-  const [categoryError, setCategoryError] = useState("");
-  const [error, setError] = useState("");
+  const [selectedDiscussionId, setSelectedDiscussionId] = useState(
+    location.state?.discussionId ?? null,
+  );
 
-  // Load categories
+  const [fromHome, setFromHome] = useState(
+    location.state?.fromHome ?? false,
+  );
+
+  const [fromCategory, setFromCategory] = useState(
+    location.state?.fromCategory ?? false,
+  );
+
+  const [isCreating, setIsCreating] = useState(
+    location.pathname === "/create-discussion",
+  );
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
   useEffect(() => {
-    let ignoreResponse = false;
+    if (location.pathname === "/create-discussion") {
+      setIsCreating(true);
+      setSelectedDiscussionId(null);
+      setFromHome(false);
+      setFromCategory(false);
+      setIsEditing(false);
+      return;
+    }
 
-    const loadCategories = async () => {
-      try {
-        const response = await getCategories();
+    if (location.state?.discussionId !== undefined) {
+      setSelectedDiscussionId(location.state.discussionId);
+      setFromHome(location.state?.fromHome ?? false);
+      setFromCategory(location.state?.fromCategory ?? false);
+      setIsCreating(false);
+      setIsEditing(false);
+    }
+  }, [location.pathname, location.state]);
 
-        const categoryList = response.data?.categories;
+  const selectedDiscussion = discussions.find(
+    (discussion) =>
+      String(getDiscussionId(discussion)) ===
+      String(selectedDiscussionId),
+  );
 
-        if (!ignoreResponse) {
-          setCategories(
-            Array.isArray(categoryList) ? categoryList : []
-          );
-        }
-      } catch (requestError) {
-        if (!ignoreResponse) {
-          setCategoryError(
-            requestError.message || "Failed to load categories"
-          );
-        }
-      }
-    };
+  const handleStartDiscussion = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
 
-    loadCategories();
-
-    return () => {
-      ignoreResponse = true;
-    };
-  }, []);
-
-  // Load discussions whenever filters/sort/page change
-  useEffect(() => {
-    let ignoreResponse = false;
-
-    const loadDiscussions = async () => {
-      setLoading(true);
-      setError("");
-
-      try {
-        const response = await getDiscussions({
-          search,
-          category,
-          page,
-          limit: 10,
-          sort,
-        });
-
-        const data = response.data ?? {};
-        const discussionList = data.discussions;
-        const pagination = data.pagination ?? {};
-
-        if (!ignoreResponse) {
-          setDiscussions(
-            Array.isArray(discussionList) ? discussionList : []
-          );
-
-          const pages = Number(pagination.totalPages);
-
-          setTotalPages(
-            Number.isFinite(pages) && pages > 0 ? pages : 1
-          );
-        }
-      } catch (requestError) {
-        if (!ignoreResponse) {
-          setDiscussions([]);
-          setTotalPages(1);
-          setError(
-            requestError.message || "Failed to load discussions"
-          );
-        }
-      } finally {
-        if (!ignoreResponse) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadDiscussions();
-
-    return () => {
-      ignoreResponse = true;
-    };
-  }, [search, category, page, sort]);
-
-  const handleSearchSubmit = (event) => {
-    event.preventDefault();
-
-    setPage(1);
-    setSearch(searchInput.trim());
+    setIsCreating(true);
   };
 
-  const handleCategoryChange = (event) => {
-    setPage(1);
-    setCategory(event.target.value);
+  const handleCreate = (discussionData) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    const discussion = {
+      ...discussionData,
+      id: globalThis.crypto?.randomUUID?.() ?? Date.now(),
+      author: "You",
+      createdAt: new Date().toISOString(),
+      replies: [],
+      replyCount: 0,
+    };
+
+    setDiscussions((currentDiscussions) => [
+      discussion,
+      ...currentDiscussions,
+    ]);
+
+    setIsCreating(false);
+    setSelectedDiscussionId(getDiscussionId(discussion));
+
+    navigate("/discussions", { replace: true });
   };
 
-  const handleSortChange = (event) => {
-    setPage(1);
-    setSort(event.target.value);
+  const handleReply = (replyContent) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (
+      selectedDiscussionId === null ||
+      selectedDiscussionId === undefined
+    ) {
+      return;
+    }
+
+    const newReply = {
+      id: globalThis.crypto?.randomUUID?.() ?? Date.now(),
+      author: "You",
+      content: replyContent,
+      createdAt: new Date().toISOString(),
+    };
+
+    setDiscussions((currentDiscussions) =>
+      currentDiscussions.map((discussion) => {
+        if (
+          String(getDiscussionId(discussion)) !==
+          String(selectedDiscussionId)
+        ) {
+          return discussion;
+        }
+
+        const existingReplyCount =
+          discussion.replyCount ??
+          (Array.isArray(discussion.replies)
+            ? discussion.replies.length
+            : discussion.replies ?? 0);
+
+        const existingReplies = Array.isArray(discussion.replies)
+          ? discussion.replies
+          : [];
+
+        return {
+          ...discussion,
+          replies: [...existingReplies, newReply],
+          replyCount: existingReplyCount + 1,
+        };
+      }),
+    );
   };
 
-  const handleClearFilters = () => {
-    setSearchInput("");
-    setSearch("");
-    setCategory("");
-    setSort("latest");
-    setPage(1);
+  const handleUpdate = (updatedDiscussion) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    const updatedId = getDiscussionId(updatedDiscussion);
+
+    setDiscussions((currentDiscussions) =>
+      currentDiscussions.map((discussion) =>
+        String(getDiscussionId(discussion)) === String(updatedId)
+          ? updatedDiscussion
+          : discussion,
+      ),
+    );
+
+    setIsEditing(false);
+    setSuccessMessage("Discussion updated successfully.");
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+  };
+
+  const handleDelete = (discussionId) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    setDiscussions((currentDiscussions) =>
+      currentDiscussions.filter(
+        (discussion) =>
+          String(getDiscussionId(discussion)) !==
+          String(discussionId),
+      ),
+    );
+
+    if (
+      String(selectedDiscussionId) === String(discussionId)
+    ) {
+      setSelectedDiscussionId(null);
+      setIsEditing(false);
+    }
+
+    setSuccessMessage("Discussion deleted successfully.");
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+  };
+
+  const handleBack = () => {
+    setSelectedDiscussionId(null);
+    setFromHome(false);
+    setFromCategory(false);
+    setIsEditing(false);
+
+    if (fromCategory) {
+      navigate(-1);
+      return;
+    }
+
+    if (fromHome) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    navigate("/discussions", { replace: true });
+  };
+
+  const handleCancelCreate = () => {
+    setIsCreating(false);
+
+    if (location.pathname === "/create-discussion") {
+      navigate("/discussions", { replace: true });
+    }
   };
 
   return (
     <section>
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Discussions
-        </h1>
-
-        <p className="mt-2 text-slate-600">
-          Search discussions, filter by category, and choose how they
-          are sorted.
+      {successMessage && (
+        <p
+          role="status"
+          className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800"
+        >
+          {successMessage}
         </p>
-      </div>
+      )}
 
-      {/* Filters */}
-      <form
-        onSubmit={handleSearchSubmit}
-        className="mt-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2 lg:grid-cols-4"
-      >
-        <div className="lg:col-span-2">
-          <label
-            htmlFor="discussion-search"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
-            Search
-          </label>
-
-          <input
-            id="discussion-search"
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search discussions..."
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="discussion-category"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
-            Category
-          </label>
-
-          <select
-            id="discussion-category"
-            value={category}
-            onChange={handleCategoryChange}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">All categories</option>
-
-            {categories.map((item) => (
-              <option
-                key={item._id}
-                value={item._id}
-              >
-                {item.name}
-              </option>
-            ))}
-          </select>
-
-          {categoryError ? (
-            <p className="mt-1 text-xs text-amber-700">
-              Could not load categories: {categoryError}
-            </p>
-          ) : null}
-        </div>
-
-        <div>
-          <label
-            htmlFor="discussion-sort"
-            className="mb-1 block text-sm font-medium text-slate-700"
-          >
-            Sort by
-          </label>
-
-          <select
-            id="discussion-sort"
-            value={sort}
-            onChange={handleSortChange}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="latest">Latest</option>
-            <option value="oldest">Oldest</option>
-            <option value="popular">Popular</option>
-          </select>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-2 lg:col-span-4">
-          <button
-            type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400"
-          >
-            Search
-          </button>
+      {!selectedDiscussion && !isCreating && (
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Discussions
+          </h1>
 
           <button
             type="button"
-            onClick={handleClearFilters}
-            className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            onClick={handleStartDiscussion}
+            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
-            Clear filters
+            Start a discussion
           </button>
+        </header>
+      )}
+
+      {isCreating ? (
+        <CreateDiscussion
+          onCreate={handleCreate}
+          onCancel={handleCancelCreate}
+        />
+      ) : selectedDiscussion ? (
+        isEditing ? (
+          <EditDiscussion
+            discussion={selectedDiscussion}
+            onSave={handleUpdate}
+            onCancel={() => setIsEditing(false)}
+          />
+        ) : (
+          <DiscussionDetails
+            discussion={selectedDiscussion}
+            onBack={handleBack}
+            onEdit={() => setIsEditing(true)}
+            onDelete={handleDelete}
+            onReply={handleReply}
+          />
+        )
+      ) : (
+        <div className="space-y-4">
+          {discussions.map((discussion) => (
+            <DiscussionCard
+              key={getDiscussionId(discussion)}
+              discussion={discussion}
+              onView={setSelectedDiscussionId}
+              onDelete={handleDelete}
+            />
+          ))}
         </div>
-      </form>
-
-      {/* Discussions */}
-      <div className="mt-6" aria-live="polite">
-        {loading ? (
-          <p className="rounded-lg bg-white p-5 text-slate-600">
-            Loading discussions...
-          </p>
-        ) : null}
-
-        {!loading && error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-red-800">
-            <p className="font-medium">
-              Could not load discussions.
-            </p>
-
-            <p className="mt-1 text-sm">{error}</p>
-          </div>
-        ) : null}
-
-        {!loading && !error && discussions.length === 0 ? (
-          <p className="rounded-lg border border-slate-200 bg-white p-5 text-slate-600">
-            No discussions found. Try another search or clear the
-            filters.
-          </p>
-        ) : null}
-
-        {!loading && !error && discussions.length > 0 ? (
-          <div className="space-y-4">
-            {discussions.map((discussion) => (
-              <DiscussionCard
-                key={discussion._id}
-                discussion={discussion}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Pagination */}
-      <nav
-        aria-label="Discussion pages"
-        className="mt-6 flex items-center justify-between"
-      >
-        <button
-          type="button"
-          onClick={() =>
-            setPage((currentPage) => Math.max(1, currentPage - 1))
-          }
-          disabled={page <= 1 || loading}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Previous
-        </button>
-
-        <p className="text-sm text-slate-600">
-          Page {page} of {totalPages}
-        </p>
-
-        <button
-          type="button"
-          onClick={() =>
-            setPage((currentPage) =>
-              Math.min(totalPages, currentPage + 1)
-            )
-          }
-          disabled={page >= totalPages || loading}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Next
-        </button>
-      </nav>
+      )}
     </section>
   );
 };

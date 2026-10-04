@@ -1,72 +1,111 @@
-const formatDate = (dateValue) => {
-  if (!dateValue) {
-    return "";
+import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import DeleteDiscussion from "./DeleteDiscussion";
+import ReportButton from "../Moderation/ReportButton";
+
+function DiscussionCard({
+  discussion,
+  onView,
+  onDelete,
+}) {
+  const { user, isAuthenticated } = useAuth();
+
+  if (!discussion) {
+    return null;
   }
 
-  const date = new Date(dateValue);
+  const discussionId =
+    discussion.id ?? discussion._id;
 
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-  }).format(date);
-};
-
-const DiscussionCard = ({ discussion }) => {
   const authorName =
-    typeof discussion.author === "object"
-      ? discussion.author?.name
-      : null;
-
-  const categoryName =
-    typeof discussion.category === "object"
-      ? discussion.category?.name
-      : null;
+    typeof discussion.author === "string"
+      ? discussion.author
+      : discussion.author?.username ??
+        discussion.author?.name ??
+        "Unknown author";
 
   const replyCount =
     discussion.replyCount ??
-    discussion.repliesCount ??
-    discussion.replies?.length;
+    (Array.isArray(discussion.replies)
+      ? discussion.replies.length
+      : discussion.replies ?? 0);
+
+  const isAdmin =
+    isAuthenticated && user?.role === "admin";
+
+  const currentUserName =
+    user?.username ??
+    user?.name ??
+    user?.email ??
+    "You";
+
+  const isDiscussionOwner =
+    isAuthenticated &&
+    (authorName === "You" ||
+      authorName === currentUserName);
+
+  const canDeleteDiscussion =
+    isAdmin || isDiscussionOwner;
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        {categoryName ? (
-          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-            {categoryName}
-          </span>
-        ) : null}
-
-        {discussion.createdAt ? (
-          <time className="text-sm text-slate-500">
-            {formatDate(discussion.createdAt)}
-          </time>
-        ) : null}
-      </div>
-
-      <h2 className="mt-3 text-xl font-semibold text-slate-900">
+    <article className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-lg font-semibold text-slate-900">
         {discussion.title || "Untitled discussion"}
       </h2>
 
-      <p className="mt-2 whitespace-pre-wrap text-slate-700">
-        {discussion.body || discussion.content || ""}
-      </p>
+      {discussion.content && (
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">
+          {discussion.content}
+        </p>
+      )}
 
-      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+        <span>Posted by</span>
+
+        <Link
+          to={`/profile/${encodeURIComponent(authorName)}`}
+          className="font-medium text-slate-800 hover:underline"
+        >
+          {authorName}
+        </Link>
+
+        <span>•</span>
+
         <span>
-          Started by {authorName || "Forum member"}
+          {replyCount}{" "}
+          {replyCount === 1
+            ? "reply"
+            : "replies"}
         </span>
+      </div>
 
-        {replyCount !== undefined ? (
-          <span>
-            {replyCount} {replyCount === 1 ? "reply" : "replies"}
-          </span>
-        ) : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {onView && (
+          <button
+            type="button"
+            onClick={() => onView(discussionId)}
+            className="rounded-md bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          >
+            View discussion
+          </button>
+        )}
+
+        {isAuthenticated && (
+          <ReportButton
+            contentType="discussion"
+            contentId={discussionId}
+          />
+        )}
+
+        {onDelete && canDeleteDiscussion && (
+          <DeleteDiscussion
+            discussionId={discussionId}
+            onDelete={onDelete}
+          />
+        )}
       </div>
     </article>
   );
-};
+}
 
 export default DiscussionCard;
