@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Community Forum. This guide covers the workflow,
+Thanks for helping improve ChatterBox. This guide covers the workflow,
 conventions and checklist we expect, so changes land smoothly.
 
 By contributing you agree that your work may be distributed under the project's

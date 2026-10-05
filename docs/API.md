@@ -77,7 +77,7 @@ curl http://localhost:5000/api/v1/
 ```
 
 ```json
-{ "success": true, "message": "Community Forum API" }
+{ "success": true, "message": "ChatterBox API" }
 ```
 
 ### `GET /health`
@@ -86,7 +86,7 @@ Liveness check. Public. Note: this does **not** verify the database connection â
 it answers as long as the process is up.
 
 ```json
-{ "success": true, "message": "Community Forum API is running" }
+{ "success": true, "message": "ChatterBox API is running" }
 ```
 
 ### `GET /ready`
@@ -98,7 +98,7 @@ Readiness check. Public. Verifies the MongoDB connection (`readyState === 1`).
 ```json
 {
   "success": true,
-  "message": "Community Forum API is running",
+  "message": "ChatterBox API is running",
   "data": { "database": "connected" }
 }
 ```
@@ -108,7 +108,7 @@ Readiness check. Public. Verifies the MongoDB connection (`readyState === 1`).
 ```json
 {
   "success": false,
-  "message": "Community Forum API is running but the database is unavailable"
+  "message": "ChatterBox API is running but the database is unavailable"
 }
 ```
 

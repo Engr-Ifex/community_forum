@@ -17,9 +17,9 @@ const Footer = () => {
               className="flex items-center gap-2 rounded-lg text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
               <span className="grid h-7 w-7 place-items-center rounded-md bg-blue-600 text-xs font-bold text-white">
-                CF
+                CB
               </span>
-              <span className="font-semibold tracking-tight">Community Forum</span>
+              <span className="font-semibold tracking-tight">ChatterBox</span>
             </Link>
 
             <p className="mt-3 text-sm leading-relaxed text-slate-500">
@@ -84,7 +84,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-10 border-t border-slate-200 pt-6 text-sm text-slate-500">
-          Community Forum
+          ChatterBox
         </div>
       </div>
     </footer>
