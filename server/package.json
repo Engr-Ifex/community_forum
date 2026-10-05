@@ -1,8 +1,8 @@
 {
-  "name": "community-forum-server",
+  "name": "chatterbox-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Community Forum REST API - Express + MongoDB foundation",
+  "description": "ChatterBox REST API - Express + MongoDB foundation",
   "type": "module",
   "main": "src/server.js",
   "engines": {
