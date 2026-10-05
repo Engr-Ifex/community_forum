@@ -63,12 +63,12 @@ const Navbar = () => {
           to="/"
           className="flex items-center gap-2 rounded-lg text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">
-            CF
-          </span>
-          <span className="text-base font-semibold tracking-tight">
-            Community Forum
-          </span>
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">
+                CB
+              </span>
+              <span className="text-base font-semibold tracking-tight">
+                ChatterBox
+              </span>
         </NavLink>
 
         {/* Desktop links */}

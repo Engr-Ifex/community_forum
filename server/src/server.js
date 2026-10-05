@@ -47,7 +47,7 @@ const startServer = async () => {
   await connectDatabase();
 
   const httpServer = app.listen(env.PORT, () => {
-    console.info(`[server] Community Forum API listening on http://localhost:${env.PORT}${env.API_PREFIX}`);
+    console.info(`[server] ChatterBox API listening on http://localhost:${env.PORT}${env.API_PREFIX}`);
     console.info(`[server] environment: ${env.NODE_ENV}`);
     console.info(`[server] CORS origin(s): ${env.CLIENT_ORIGINS.join(", ")}`);
   });
@@ -56,7 +56,7 @@ const startServer = async () => {
 };
 
 startServer().catch((error) => {
-  console.error("[server] failed to start the Community Forum API");
+  console.error("[server] failed to start the ChatterBox API");
   console.error(`[server] ${error.message}`);
   process.exit(1);
 });

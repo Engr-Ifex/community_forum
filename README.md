@@ -1,9 +1,9 @@
-# Community Forum
+# ChatterBox
 
-A full-stack discussion forum where people ask questions, share what they know,
-and follow the conversations worth following. It ships with authentication,
-role-based access (user / moderator / admin), threaded replies, reporting, a
-moderation queue, and an admin console.
+ChatterBox is a full-stack community forum platform where people ask questions,
+share what they know, and follow the conversations worth following. It ships with
+authentication, role-based access (user / moderator / admin), threaded replies,
+reporting, a moderation queue, and an admin console.
 
 The project is split into two independent applications:
 
@@ -42,7 +42,7 @@ The project is split into two independent applications:
 
 ## 1. Overview
 
-Community Forum is a capstone-style full-stack project. It is a classic
+ChatterBox is a capstone-style full-stack project. It is a classic community
 forum: public browsing, authenticated posting, moderator tooling and an admin
 console. The frontend is a single-page React app that talks to a versioned REST
 API over `fetch`/Axios with a cookie-based session.

@@ -80,11 +80,11 @@ const AppLayout = ({ children }) => {
               className="flex min-w-0 items-center gap-2 rounded-lg text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             >
               <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-600 text-sm font-bold text-white">
-                CF
+                CB
               </span>
 
               <span className="truncate text-base font-semibold tracking-tight">
-                Community Forum
+                ChatterBox
               </span>
             </Link>
           </div>
