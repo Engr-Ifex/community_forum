@@ -106,7 +106,7 @@ const ReplyItem = ({ reply, isOwn, canReport = false, onChanged }) => {
         </div>
       ) : (
         <>
-          <p className="mt-1 whitespace-pre-wrap text-slate-700">
+          <p className="mt-1 whitespace-pre-wrap break-words text-slate-700">
             {reply.content}
           </p>
 

@@ -317,7 +317,9 @@ export const Notice = ({ children, tone = "success", onDismiss, className = "" }
         .filter(Boolean)
         .join(" ")}
     >
-      <span>{children}</span>
+      {/* `min-w-0` so a long unbroken string (an email, a URL) wraps inside the
+          banner instead of forcing the dismiss button off the edge. */}
+      <span className="min-w-0 break-words">{children}</span>
 
       {onDismiss ? (
         <button
@@ -442,7 +444,10 @@ export const PageHeader = ({ title, description, children, className = "" }) => 
     </div>
 
     {children ? (
-      <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>
+      // `sm:shrink-0` only from the row layout up. On mobile the header is a
+      // column, so the action group already gets the full width - pinning it
+      // there would be a no-op at best and an overflow at worst.
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">{children}</div>
     ) : null}
   </div>
 );

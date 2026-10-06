@@ -123,6 +123,17 @@
    passwords, bakes in the SRV DNS fallback. **DEVELOPMENT/TESTING ONLY.**
    `.gitignore`: `server/scripts/*` with `!server/scripts/seed.js`.
 4. Manual admin instead: register, then set `role:"admin"` in MongoDB.
+5. **Local DB helpers** (both git-ignored, in `server/scripts/`):
+   - `node scripts/inventory.mjs` — read-only dump of users / discussions /
+     replies / reports / moderation actions, with author emails. Use this before
+     any destructive DB work.
+   - `node scripts/cleanup-test-data.mjs` — **dry-run by default**; `--apply` to
+     act. Keeps the real account, `admin@`/`moderator@`, the discussion
+     "Testing 101" and the categories; deletes everything else and reassigns the
+     categories' `createdBy` to the kept admin. Edit the `KEEP_EMAILS` /
+     `KEEP_DISCUSSION_TITLE` constants at the top to change the target set.
+   **The harnesses create real rows** (`vmember@`, `svc.*@`, `e2e.*@`, …), so run
+   the cleanup after a verification session or the DB fills with junk.
 
 ## Design system
 `components/common/ui.jsx` is the single source. `buttonClass(variant,size,extra)`
@@ -137,6 +148,25 @@ Palette: slate neutrals + one `blue-600` accent; active pills
 in a fixed internal property order, not class-string order, so
 `buttonClass("primary","lg","bg-white text-slate-900")` emits both rules and
 Tailwind picks the winner (this caused a real white-on-white CTA bug).
+
+## Mobile / responsive rules (learned the hard way — `verify-responsive.mjs` enforces)
+- **Never combine `flex-wrap` with a bare `shrink-0`** on the same element.
+  `shrink-0` pins the container to max-content, so the wrap never fires and the
+  group overflows its parent. This is what pushed "Browse discussions" out of the
+  Dashboard card. Use `sm:shrink-0` when the pin only matters in the row layout.
+- **Tab strips wrap; they do not scroll.** An `overflow-x-auto` row hides its
+  right-hand tabs with no affordance (Admin's "Reports" / "Moderation log").
+- **Grids are mobile-first**: `grid-cols-1` base + `sm:`/`md:`/`lg:` above. A bare
+  `grid-cols-2+` forces columns at every width.
+- **Any user-generated text block needs `break-words`** alongside
+  `whitespace-pre-wrap`, or one long unbroken string (a URL, a pasted token)
+  overflows horizontally.
+- **Every `<table>` needs an `overflow-x-auto` ancestor.**
+- **A flex row of `label / value` needs `flex-wrap` + `min-w-0 break-words` on the
+  value** or a long email overflows a `max-w-lg` dialog.
+- `client/scripts/verify-responsive.mjs` statically enforces all of the above
+  (it strips comments first, since comments legitimately name the banned classes).
+  Run it with the other harnesses.
 
 ## Documentation
 - `README.md` — 21 sections (overview → contributing), incl. **§10 Development
