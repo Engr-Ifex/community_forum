@@ -89,14 +89,11 @@ const AppLayout = ({ children }) => {
             </Link>
           </div>
 
+          {/* No "Home" link here on purpose: once signed in, the application is
+              where the user belongs. The public landing page is reached by
+              logging out (which returns to "/"), not by a nav control. The brand
+              mark above already links back to /dashboard. */}
           <div className="flex shrink-0 items-center gap-2">
-            <Link
-              to="/"
-              className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:inline-flex"
-            >
-              Home
-            </Link>
-
             <AvatarMenu />
           </div>
         </div>
