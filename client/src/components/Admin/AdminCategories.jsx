@@ -46,7 +46,7 @@ const AdminCategories = ({ categories, busyId, onCreate, onEdit, onDelete }) => 
           {categories.map((category) => (
             <li
               key={category._id}
-              className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4"
             >
               <div className="min-w-0">
                 <h3 className="font-semibold capitalize text-slate-900">
@@ -66,7 +66,7 @@ const AdminCategories = ({ categories, busyId, onCreate, onEdit, onDelete }) => 
                 </p>
               </div>
 
-              <div className="flex shrink-0 flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
                 <button
                   type="button"
                   onClick={() => onEdit(category)}
