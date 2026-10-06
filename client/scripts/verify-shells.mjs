@@ -397,7 +397,69 @@ for (const url of [
   const html = renderSignedIn("/dashboard");
   check("sidebar links to /discussions", html.includes('href="/discussions"'), true);
   check("sidebar links to /categories", html.includes('href="/categories"'), true);
-  check("app top bar links home", html.includes('href="/"'), true);
+  // No route back to the public landing page while signed in - logout is the
+  // only way out, and that returns to "/".
+  check("app shell has no link to the public home page", html.includes('href="/"'), false);
+}
+
+// Guests still get the public home link, so the removal is scoped to the app
+// shell only. (The session is re-stubbed here because the block above left the
+// signed-in admin in place.)
+__authValue.current = {
+  user: null,
+  isAuthenticated: false,
+  loading: false,
+  role: null,
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  refreshUser: async () => {},
+};
+
+{
+  const html = renderAt("/discussions");
+  check("guest navbar still links home", html.includes('href="/"'), true);
+}
+
+/* ------------------------------------------------------------------ */
+/* Branding                                                           */
+/* ------------------------------------------------------------------ */
+console.log("\n=== BRANDING (ChatterBox) ===");
+
+// Guests: the public navbar and footer carry the brand.
+__authValue.current = {
+  user: null,
+  isAuthenticated: false,
+  loading: false,
+  role: null,
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  refreshUser: async () => {},
+};
+
+for (const url of ["/", "/discussions", "/categories"]) {
+  const html = renderAt(url);
+  check(`guest ${url} shows the ChatterBox brand`, html.includes("ChatterBox"), true);
+  check(`guest ${url} hides the old brand`, html.includes("Community Forum"), false);
+}
+
+// Signed in: the application shell carries the brand.
+__authValue.current = {
+  user: { _id: "u1", name: "Admin Person", email: "a@example.com", role: "admin" },
+  isAuthenticated: true,
+  loading: false,
+  role: "admin",
+  login: async () => {},
+  register: async () => {},
+  logout: async () => {},
+  refreshUser: async () => {},
+};
+
+for (const url of ["/dashboard", "/discussions", "/admin"]) {
+  const html = renderAt(url);
+  check(`signed-in ${url} shows the ChatterBox brand`, html.includes("ChatterBox"), true);
+  check(`signed-in ${url} hides the old brand`, html.includes("Community Forum"), false);
 }
 
 /* ------------------------------------------------------------------ */

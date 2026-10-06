@@ -111,7 +111,7 @@ const ReportRow = ({ report, busy, onResolve, onDismiss, onLock, onRemove }) => 
       </h2>
 
       {reportedBody ? (
-        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">
+        <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-600">
           {truncate(reportedBody)}
         </p>
       ) : null}

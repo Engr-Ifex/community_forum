@@ -189,13 +189,22 @@ const Dashboard = () => {
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <Link to="/create-discussion" className={buttonClass("primary", "md")}>
+          {/* Full-width stack on mobile: the two buttons side by side are wider
+              than a phone viewport, and `shrink-0` here used to push the second
+              one straight out of the card. */}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+            <Link
+              to="/create-discussion"
+              className={buttonClass("primary", "md", "w-full justify-center sm:w-auto")}
+            >
               <PlusIcon className="h-4 w-4" />
               Start a discussion
             </Link>
 
-            <Link to="/discussions" className={buttonClass("secondary", "md")}>
+            <Link
+              to="/discussions"
+              className={buttonClass("secondary", "md", "w-full justify-center sm:w-auto")}
+            >
               Browse discussions
             </Link>
           </div>

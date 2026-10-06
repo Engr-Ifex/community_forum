@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Production-readiness report for the Community Forum MVP. Every claim below was
+Production-readiness report for the ChatterBox MVP. Every claim below was
 verified by actually building and booting the project — nothing here is assumed.
 
 **Verification performed**
@@ -147,7 +147,7 @@ Set Root Directory to `client`, Build Command `npm run build`, Output `dist`.
 
 ```nginx
 location / {
-  root /var/www/community-forum/dist;
+  root /var/www/chatterbox/dist;
   try_files $uri $uri/ /index.html;
 }
 ```

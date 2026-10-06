@@ -1,8 +1,8 @@
 {
-  "name": "community-forum-client",
+  "name": "chatterbox-client",
   "private": true,
   "version": "0.1.0",
-  "description": "Community Forum frontend - React + Vite + Tailwind CSS",
+  "description": "ChatterBox frontend - React + Vite + Tailwind CSS",
   "type": "module",
   "scripts": {
     "dev": "vite",

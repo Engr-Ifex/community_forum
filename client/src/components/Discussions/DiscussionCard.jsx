@@ -107,7 +107,7 @@ const DiscussionCard = ({ discussion }) => {
       </h2>
 
       {body ? (
-        <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+        <p className="mt-2 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-600">
           {body}
         </p>
       ) : null}

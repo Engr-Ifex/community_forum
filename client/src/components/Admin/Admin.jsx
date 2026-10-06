@@ -354,16 +354,17 @@ const Admin = () => {
         </Notice>
       ) : null}
 
-      {/* Tabs scroll horizontally on narrow screens rather than wrapping into
-          a tall stack. */}
-      <div className="mt-6 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      {/* Tabs wrap rather than scroll horizontally. The previous
+          `overflow-x-auto` row hid "Reports" and "Moderation log" off the right
+          edge on a phone with no visible affordance that they were there. */}
+      <div className="mt-6 flex flex-wrap gap-2">
         {TABS.map(([value, label]) => (
           <button
             key={value}
             type="button"
             onClick={() => setTab(value)}
             aria-current={tab === value ? "page" : undefined}
-            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               tab === value
                 ? "bg-blue-600 text-white"
                 : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"

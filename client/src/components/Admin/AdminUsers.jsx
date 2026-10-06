@@ -103,13 +103,17 @@ const UserDetail = ({ userId, onClose }) => {
           </div>
         ) : user ? (
           <dl className="mt-5 space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <dt className="text-slate-500">Name</dt>
-              <dd className="font-medium text-slate-900">{user.name}</dd>
+              <dd className="min-w-0 break-words text-right font-medium text-slate-900">
+                {user.name}
+              </dd>
             </div>
-            <div className="flex justify-between gap-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <dt className="text-slate-500">Email</dt>
-              <dd className="font-medium text-slate-900">{user.email}</dd>
+              <dd className="min-w-0 break-words text-right font-medium text-slate-900">
+                {user.email}
+              </dd>
             </div>
             <div className="flex items-center justify-between gap-4">
               <dt className="text-slate-500">Role</dt>
@@ -134,7 +138,7 @@ const UserDetail = ({ userId, onClose }) => {
             {user.bio ? (
               <div>
                 <dt className="text-slate-500">Bio</dt>
-                <dd className="mt-1 whitespace-pre-wrap text-slate-800">{user.bio}</dd>
+                <dd className="mt-1 whitespace-pre-wrap break-words text-slate-800">{user.bio}</dd>
               </div>
             ) : null}
           </dl>

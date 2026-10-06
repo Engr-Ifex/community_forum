@@ -263,7 +263,7 @@ const Profile = () => {
 
         <div className="mt-5 border-t border-slate-100 pt-5">
           {profileUser?.bio ? (
-            <p className="whitespace-pre-wrap leading-relaxed text-slate-700">
+            <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-700">
               {profileUser.bio}
             </p>
           ) : (
@@ -366,7 +366,7 @@ const Profile = () => {
                   key={reply._id}
                   className="rounded-lg border border-slate-200 bg-white p-4"
                 >
-                  <p className="line-clamp-3 whitespace-pre-wrap text-slate-700">
+                  <p className="line-clamp-3 whitespace-pre-wrap break-words text-slate-700">
                     {reply.content ?? "(empty reply)"}
                   </p>
 

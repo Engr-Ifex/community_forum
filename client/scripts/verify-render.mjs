@@ -291,7 +291,8 @@ console.log("\n=== AppLayout renders (admin) ===");
   if (threw) {
     console.log(`        ${threw.message}`);
   } else {
-    check("top bar shows the brand", html.includes("Community Forum"), true);
+    check("top bar shows the brand", html.includes("ChatterBox"), true);
+    check("top bar does NOT show the old brand", html.includes("Community Forum"), false);
     check("avatar trigger is present", html.includes('aria-label="Account menu"'), true);
     check("renders the routed content", html.includes("DASHBOARD CONTENT"), true);
     check("does NOT render the public footer", html.includes("<footer"), false);

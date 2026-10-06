@@ -419,7 +419,7 @@ const DiscussionDetails = () => {
         </div>
       </header>
 
-      <div className="whitespace-pre-wrap py-6 leading-7 text-slate-800">
+      <div className="whitespace-pre-wrap break-words py-6 leading-7 text-slate-800">
         {discussion?.content || "No discussion content."}
       </div>
 
