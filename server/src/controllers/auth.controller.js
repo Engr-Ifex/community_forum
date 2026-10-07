@@ -35,6 +35,10 @@ const clearAuthCookie = (res) => {
 export const register = async (req, res) => {
   const { user, token } = await registerUser(req.body);
 
+  // The cookie must be attached before the response is sent. `res.cookie()`
+  // mutates the outgoing headers, but `res.status()` hands back the response
+  // object that `res.json()` will end up sending - so setting the cookie first
+  // guarantees it is present when the browser receives the 201.
   setAuthCookie(res, token);
 
   return createdResponse(res, {

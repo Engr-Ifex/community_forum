@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { buttonClass, inputClass, labelClass, textareaClass } from "../common/ui";
+
+/**
+ * Edit form for a discussion.
+ *
+ * The parent keys this component by discussion id, so switching discussions
+ * remounts it and re-seeds state from the new props. That keeps the seeding out
+ * of an effect, which would otherwise cause a cascading render.
+ */
 function EditDiscussion({ discussion = {}, onSave, onCancel }) {
   const [title, setTitle] = useState(discussion.title ?? "");
   const [content, setContent] = useState(discussion.content ?? "");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setTitle(discussion.title ?? "");
-    setContent(discussion.content ?? "");
-    setError("");
-  }, [discussion.title, discussion.content]);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -35,9 +38,10 @@ function EditDiscussion({ discussion = {}, onSave, onCancel }) {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
-          <label htmlFor="discussion-title" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="discussion-title" className={`mb-1 ${labelClass}`}>
             Title
           </label>
+
           <input
             id="discussion-title"
             name="title"
@@ -45,14 +49,15 @@ function EditDiscussion({ discussion = {}, onSave, onCancel }) {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             required
-            className="w-full rounded border border-slate-300 px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700"
+            className={inputClass()}
           />
         </div>
 
         <div>
-          <label htmlFor="discussion-content" className="mb-1 block text-sm font-medium text-slate-700">
+          <label htmlFor="discussion-content" className={`mb-1 ${labelClass}`}>
             Content
           </label>
+
           <textarea
             id="discussion-content"
             name="content"
@@ -60,23 +65,25 @@ function EditDiscussion({ discussion = {}, onSave, onCancel }) {
             onChange={(event) => setContent(event.target.value)}
             rows={6}
             required
-            className="w-full resize-y rounded border border-slate-300 px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700"
+            className={textareaClass()}
           />
         </div>
 
-        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+        {error ? (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
+          <button type="submit" className={buttonClass("primary", "md")}>
             Save changes
           </button>
+
           <button
             type="button"
             onClick={onCancel}
-            className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className={buttonClass("secondary", "md")}
           >
             Cancel
           </button>

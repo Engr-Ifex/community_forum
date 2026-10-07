@@ -68,6 +68,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-/** Foundation connectivity check; feature services stay empty until their phases begin. */
-export const fetchHealth = () => api.get("/health");
